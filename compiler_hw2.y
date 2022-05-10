@@ -22,13 +22,35 @@
 
     /* Symbol table function - you can add new functions if needed. */
     /* parameters and return type can be changed */
+    typedef struct symtable_node symtable_type;
+    struct symtable_node{
+        int level;
+        int index;
+        char* name;
+        char* type;
+        int address;
+        int lineno;
+        char* func_sig;
+        symtable_type* next;
+    };
+
+    typedef struct symtable_stack_node symtable_stack_type;
+    struct symtable_stack_node{
+        symtable_type* table;
+        int level;
+        symtable_stack_type* next;
+    };
+
     static void create_symbol();
     static void insert_symbol();
-    static void lookup_symbol();
+    static symtable_type* Lookup_symbol();
     static void dump_symbol();
-
     /* Global variables */
     bool HAS_ERROR = false;
+
+
+
+
 %}
 
 %error-verbose
@@ -96,7 +118,7 @@ PackageStmt
 ;
 
 FunctionDeclStmt
-        : FuncOpen '(' ParameterList ')' ReturnType FuncBlock
+        : FuncOpen '(' ParameterList ')' ReturnType FuncBlock {printf("hello 99\n");}
 ;
 
 
@@ -106,9 +128,9 @@ FuncOpen
 
 Expression
 	: UnaryExpr
-	| Expression binary_op Expression {	if	(strcmp($<type>1, "bool") == 0) $<type>$ ="bool";
-						else if (strcmp($<type>1, "int" ) == 0)$<type>$ ="int";
-						else 					$<type>$ ="float";}
+	| Expression binary_op Expression {if		(strcmp($<type>1, "bool") == 0) $<type>$ ="bool";
+					   else if 	(strcmp($<type>1, "int" ) == 0) $<type>$ ="int";
+					   else 					$<type>$ ="float";}
 ;
 
 UnaryExpr
@@ -139,9 +161,9 @@ add_op
 ;
 
 mul_op
-	: '*'
-	| '/'
-	| '%'
+	: '*'   { $<value.s_val>$="*";  printf("MUL\n"); }	  
+	| '/'   { $<value.s_val>$="/";  printf("QUO\n"); }
+	| '%'   { $<value.s_val>$="%";  printf("REM\n"); }
 ;
 
 unary_op
@@ -219,8 +241,8 @@ ExpressionStmt
 ;
 
 IncDecStmt
-	: Expression INC
-	| Expression DEC
+	: Expression INC	{ printf("INC\n");}
+	| Expression DEC	{ printf("DEC\n");}
 ;
 
 Block
@@ -281,15 +303,14 @@ ParameterList
 FuncBlock
 	: '{' StatementList '}'
 ;
-
 ReturnStmt
 	: RETURN Expression
 	| RETURN
 ;
 
 PrintStmt
-	: PRINT '(' Expression ')'
-	| PRINTLN '(' Expression ')'
+	: PRINT '(' Expression ')'	{printf("PRINT %s\n", $<type>3);}
+	| PRINTLN '(' Expression ')'	{printf("PRINTLN %s\n", $<type>3);}
 ;
 
 %%
@@ -311,21 +332,83 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+/* Symbol Table */
+int global_level = -1;
+int global_address = -1;
+
+symtable_stack_type* stack_head = NULL; 
+
 static void create_symbol() {
-    printf("> Create symbol table (scope level %d)\n", 0);
+	// create a empty stack and set property
+	global_level++;
+	symtable_stack_type* tmp_stack = (symtable_stack_type *)malloc(sizeof(symtable_stack_type));
+	tmp_stack -> table = NULL;
+	tmp_stack -> level = global_level;
+	// make it to be the head(newest) of current stack linked list
+	tmp_stack -> next = stack_head;
+	stack_head = tmp_stack;
+	// print infomation
+    	printf("> Create symbol table (scope level %d)\n", global_level);
 }
 
-static void insert_symbol() {
-    printf("> Insert `%s` (addr: %d) to scope level %d\n", "XXX", 0, 0);
+static void insert_symbol(char* name, char* type, char* Func_sig) {
+    	printf("> Insert `%s` (addr: %d) to scope level %d\n", name, global_address, global_level);
+	// Create a new table
+	symtable_type* tmp_table = (symtable_type *)malloc(sizeof(symtable_type));
+	tmp_table -> lineno = yylineno;
+	tmp_table -> level = global_level;
+	tmp_table -> address = global_address;
+	global_address ++;
+
+	tmp_table -> name = (char*) malloc (strlen(name) + 1);
+        strcpy(tmp_table-> name, name);
+	tmp_table -> func_sig = (char*)malloc(strlen(Func_sig) +1);
+	strcpy(tmp_table->func_sig, Func_sig);
+
+	// Make table to be the last one in head-stack
+	if(stack_head->table){
+		tmp_table -> index = 0;
+		stack_head -> table = tmp_table;
+	}
+	else{
+		int last_index = 1;
+		symtable_type* last_table = stack_head -> table;
+		while(last_table -> next){
+			last_table = last_table -> next;
+			last_index ++;
+		}
+		last_table -> index = last_index;
+		last_table -> next = tmp_table;
+	}
 }
 
-static void lookup_symbol() {
+static symtable_type* lookup_symbol(char * name) {
+	// from stack head
+	symtable_stack_type* tmp_stack = stack_head;
+	while(tmp_stack){
+		// from the first table in this stack
+		symtable_type* tmp_table = tmp_stack -> table;
+		while(tmp_table){
+			if(strcmp(tmp_table -> name,name)==0){
+				return tmp_table;
+			}
+			tmp_table = tmp_table -> next;
+		}
+		tmp_stack = tmp_stack -> next;
+	}
+	return 0;
 }
 
 static void dump_symbol() {
-    printf("\n> Dump symbol table (scope level: %d)\n", 0);
-    printf("%-10s%-10s%-10s%-10s%-10s%-10s\n",
-           "Index", "Name", "Type", "Addr", "Lineno", "Func_sig");
-    printf("%-10d%-10s%-10s%-10d%-10d%-10s\n",
-            0, "name", "type", 0, 0, "func_sig");
+	printf("\n> Dump symbol table (scope level: %d)\n", global_level);
+	printf("%-10s%-10s%-10s%-10s%-10s%-10s\n","Index", "Name", "Type", "Addr", "Lineno", "Func_sig");
+	// print all table in head stack
+	symtable_type* tmp_table = stack_head -> table;
+	while(tmp_table){
+		printf("%-10d%-10s%-10s%-10d%-10d%-10s\n",tmp_table->index, tmp_table->name, tmp_table->type, tmp_table->address, tmp_table->lineno, tmp_table->func_sig );
+		tmp_table = tmp_table->next;
+	}
+	// change head by -1
+	stack_head = stack_head-> next;
+	global_level --;
 }

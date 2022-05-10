@@ -84,15 +84,37 @@
 
     /* Symbol table function - you can add new functions if needed. */
     /* parameters and return type can be changed */
+    typedef struct symtable_node symtable_type;
+    struct symtable_node{
+        int level;
+        int index;
+        char* name;
+        char* type;
+        int address;
+        int lineno;
+        char* func_sig;
+        symtable_type* next;
+    };
+
+    typedef struct symtable_stack_node symtable_stack_type;
+    struct symtable_stack_node{
+        symtable_type* table;
+        int level;
+        symtable_stack_type* next;
+    };
+
     static void create_symbol();
     static void insert_symbol();
-    static void lookup_symbol();
+    static symtable_type* Lookup_symbol();
     static void dump_symbol();
-
     /* Global variables */
     bool HAS_ERROR = false;
 
-#line 96 "y.tab.c" /* yacc.c:339  */
+
+
+
+
+#line 118 "y.tab.c" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -208,7 +230,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 40 "compiler_hw2.y" /* yacc.c:355  */
+#line 62 "compiler_hw2.y" /* yacc.c:355  */
 
     union{
 	int i_val;
@@ -219,7 +241,7 @@ union YYSTYPE
     char * type;
     /* ... */
 
-#line 223 "y.tab.c" /* yacc.c:355  */
+#line 245 "y.tab.c" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -236,7 +258,7 @@ int yyparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 240 "y.tab.c" /* yacc.c:358  */
+#line 262 "y.tab.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -537,16 +559,16 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,    80,    80,    84,    85,    89,    90,    91,    95,    99,
-     104,   108,   109,   115,   116,   120,   121,   122,   123,   124,
-     128,   129,   130,   131,   132,   133,   137,   138,   142,   143,
-     144,   148,   149,   150,   154,   155,   156,   160,   164,   165,
-     166,   170,   171,   172,   173,   177,   181,   182,   183,   184,
-     185,   186,   187,   188,   189,   190,   194,   195,   196,   200,
-     201,   205,   209,   210,   211,   212,   213,   214,   218,   222,
-     223,   227,   231,   232,   236,   237,   238,   242,   246,   247,
-     251,   255,   259,   263,   267,   268,   272,   275,   277,   278,
-     282,   286,   287,   291,   292
+       0,   102,   102,   106,   107,   111,   112,   113,   117,   121,
+     126,   130,   131,   137,   138,   142,   143,   144,   145,   146,
+     150,   151,   152,   153,   154,   155,   159,   160,   164,   165,
+     166,   170,   171,   172,   176,   177,   178,   182,   186,   187,
+     188,   192,   193,   194,   195,   199,   203,   204,   205,   206,
+     207,   208,   209,   210,   211,   212,   216,   217,   218,   222,
+     223,   227,   231,   232,   233,   234,   235,   236,   240,   244,
+     245,   249,   253,   254,   258,   259,   260,   264,   268,   269,
+     273,   277,   281,   285,   289,   290,   294,   297,   299,   300,
+     304,   307,   308,   312,   313
 };
 #endif
 
@@ -1462,33 +1484,81 @@ yyreduce:
   switch (yyn)
     {
         case 8:
-#line 95 "compiler_hw2.y" /* yacc.c:1646  */
+#line 117 "compiler_hw2.y" /* yacc.c:1646  */
     {printf("hello world\n");}
-#line 1468 "y.tab.c" /* yacc.c:1646  */
+#line 1490 "y.tab.c" /* yacc.c:1646  */
+    break;
+
+  case 9:
+#line 121 "compiler_hw2.y" /* yacc.c:1646  */
+    {printf("hello 99\n");}
+#line 1496 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 12:
-#line 109 "compiler_hw2.y" /* yacc.c:1646  */
-    {	if	(strcmp((yyvsp[-2].type), "bool") == 0) (yyval.type) ="bool";
-						else if (strcmp((yyvsp[-2].type), "int" ) == 0)(yyval.type) ="int";
-						else 					(yyval.type) ="float";}
-#line 1476 "y.tab.c" /* yacc.c:1646  */
+#line 131 "compiler_hw2.y" /* yacc.c:1646  */
+    {if		(strcmp((yyvsp[-2].type), "bool") == 0) (yyval.type) ="bool";
+					   else if 	(strcmp((yyvsp[-2].type), "int" ) == 0) (yyval.type) ="int";
+					   else 					(yyval.type) ="float";}
+#line 1504 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 26:
-#line 137 "compiler_hw2.y" /* yacc.c:1646  */
+#line 159 "compiler_hw2.y" /* yacc.c:1646  */
     { (yyval.value.s_val)="+";  printf("ADD\n"); }
-#line 1482 "y.tab.c" /* yacc.c:1646  */
+#line 1510 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 27:
-#line 138 "compiler_hw2.y" /* yacc.c:1646  */
+#line 160 "compiler_hw2.y" /* yacc.c:1646  */
     { (yyval.value.s_val)="-";  printf("SUB\n"); }
-#line 1488 "y.tab.c" /* yacc.c:1646  */
+#line 1516 "y.tab.c" /* yacc.c:1646  */
+    break;
+
+  case 28:
+#line 164 "compiler_hw2.y" /* yacc.c:1646  */
+    { (yyval.value.s_val)="*";  printf("MUL\n"); }
+#line 1522 "y.tab.c" /* yacc.c:1646  */
+    break;
+
+  case 29:
+#line 165 "compiler_hw2.y" /* yacc.c:1646  */
+    { (yyval.value.s_val)="/";  printf("QUO\n"); }
+#line 1528 "y.tab.c" /* yacc.c:1646  */
+    break;
+
+  case 30:
+#line 166 "compiler_hw2.y" /* yacc.c:1646  */
+    { (yyval.value.s_val)="%";  printf("REM\n"); }
+#line 1534 "y.tab.c" /* yacc.c:1646  */
+    break;
+
+  case 69:
+#line 244 "compiler_hw2.y" /* yacc.c:1646  */
+    { printf("INC\n");}
+#line 1540 "y.tab.c" /* yacc.c:1646  */
+    break;
+
+  case 70:
+#line 245 "compiler_hw2.y" /* yacc.c:1646  */
+    { printf("DEC\n");}
+#line 1546 "y.tab.c" /* yacc.c:1646  */
+    break;
+
+  case 93:
+#line 312 "compiler_hw2.y" /* yacc.c:1646  */
+    {printf("PRINT %s\n", (yyvsp[-1].type));}
+#line 1552 "y.tab.c" /* yacc.c:1646  */
+    break;
+
+  case 94:
+#line 313 "compiler_hw2.y" /* yacc.c:1646  */
+    {printf("PRINTLN %s\n", (yyvsp[-1].type));}
+#line 1558 "y.tab.c" /* yacc.c:1646  */
     break;
 
 
-#line 1492 "y.tab.c" /* yacc.c:1646  */
+#line 1562 "y.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1716,7 +1786,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 295 "compiler_hw2.y" /* yacc.c:1906  */
+#line 316 "compiler_hw2.y" /* yacc.c:1906  */
 
 
 /* C code section */
@@ -1736,21 +1806,80 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+/* Symbol Table */
+int global_level = -1;
+int global_address = -1;
+
+symtable_stack_type* stack_head = NULL; 
+
 static void create_symbol() {
-    printf("> Create symbol table (scope level %d)\n", 0);
+	// create a empty stack and set property
+	global_level++;
+	symtable_stack_type* tmp_stack = (symtable_stack_type *)malloc(sizeof(symtable_stack_type));
+	tmp_stack -> table = NULL;
+	tmp_stack -> level = global_level;
+	// make it to be the head(newest) of current stack linked list
+	tmp_stack -> next = stack_head;
+	stack_head = tmp_stack;
+	
+    	printf("> Create symbol table (scope level %d)\n", global_level);
 }
 
-static void insert_symbol() {
-    printf("> Insert `%s` (addr: %d) to scope level %d\n", "XXX", 0, 0);
+static void insert_symbol(char* name, char* type, char* Func_sig) {
+    	printf("> Insert `%s` (addr: %d) to scope level %d\n", name, global_address, global_level);
+	// Create a new table
+	symtable_type* tmp_table = (symtable_type *)malloc(sizeof(symtable_type));
+	tmp_table -> lineno = yylineno;
+	tmp_table -> level = global_level;
+	tmp_table -> address = global_address;
+	global_address ++;
+
+	tmp_table -> name = (char*) malloc (strlen(name) + 1);
+        strcpy(tmp_table-> name, name);
+
+	tmp_table -> func_sig = (char*)malloc(strlen(Func_sig) +1);
+	strcpy(tmp_table->func_sig, Func_sig);
+	// Make table to be the last one in head-stack
+	if(stack_head->table){
+		tmp_table -> index = 0;
+		stack_head -> table = tmp_table;
+	}
+	else{
+		int last_index = 1;
+		symtable_type* last_table = stack_head -> table;
+		while(last_table -> next){
+			last_table = last_table -> next;
+			last_index ++;
+		}
+		last_table -> index = last_index;
+		last_table -> next = tmp_table;
+	}
 }
 
-static void lookup_symbol() {
+static symtable_type* lookup_symbol(char * name) {
+	symtable_stack_type* tmp_stack = stack_head;
+	while(tmp_stack){
+		symtable_type* tmp_table = tmp_stack -> table;
+		while(tmp_table){
+			if(strcmp(tmp_table -> name,name)==0){
+				return tmp_table;
+			}
+			tmp_table = tmp_table -> next;
+		}
+		tmp_stack = tmp_stack -> next;
+	}
+	return 0;
 }
 
 static void dump_symbol() {
-    printf("\n> Dump symbol table (scope level: %d)\n", 0);
-    printf("%-10s%-10s%-10s%-10s%-10s%-10s\n",
-           "Index", "Name", "Type", "Addr", "Lineno", "Func_sig");
-    printf("%-10d%-10s%-10s%-10d%-10d%-10s\n",
-            0, "name", "type", 0, 0, "func_sig");
+	printf("\n> Dump symbol table (scope level: %d)\n", global_level);
+	printf("%-10s%-10s%-10s%-10s%-10s%-10s\n","Index", "Name", "Type", "Addr", "Lineno", "Func_sig");
+	symtable_type* tmp_table = stack_head -> table;
+	while(tmp_table){
+		printf("%-10d%-10s%-10s%-10d%-10d%-10s\n",tmp_table->index, tmp_table->name, tmp_table->type, tmp_table->address, tmp_table->lineno, tmp_table->func_sig );
+		tmp_table = tmp_table->next;
+	}
+	// change head by -1
+	stack_head = stack_head-> next;
+	global_level --;
 }
