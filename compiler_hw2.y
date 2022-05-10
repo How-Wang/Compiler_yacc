@@ -38,25 +38,34 @@
  *  - you can add new fields if needed.
  */
 %union {
-    int i_val;
-    float f_val;
-    char *s_val;
+    union{
+	int i_val;
+    	float f_val;
+    	char *s_val;
+    	bool b_val;	
+	}value;
+    char * type;
     /* ... */
 }
 
 /* Token without return */
 %token VAR NEWLINE
 %token INT FLOAT BOOL STRING
-%token INC DEC GEQ LOR LAND
-%token ADD_ASSIGN SUB_ASSIGN
-%token IF ELSE FOR SWITCH CASE
-%token PRINT IDENT PACKAGE RETURN 
+%token INC DEC GEQ LOR LAND EQ LEQ NEQ
+%token ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
+%token IF ELSE FOR SWITCH CASE FUNC
+%token PRINT PACKAGE RETURN PRINTLN
+%token Type 
 
-%token DEFAULT 
+%token DEFAULT
 
 /* Token with return, which need to sepcify type */
 %token <i_val> INT_LIT
 %token <s_val> STRING_LIT
+%token <b_val> BOOL_LIT
+%token <f_val> FLOAT_LIT
+%token <s_val> IDENT
+
 
 /* Nonterminal with return, which need to sepcify type */
 %type <s_val> Type
@@ -68,31 +77,38 @@
 %%
 
 Program
-    : GlobalStatementList
+    	: GlobalStatementList
 ;
 
 GlobalStatementList 
-    : GlobalStatementList GlobalStatement
-    | GlobalStatement
+    	: GlobalStatementList GlobalStatement
+    	| GlobalStatement
 ;
 
 GlobalStatement
-    : PackageStmt NEWLINE
-    | FunctionDeclStmt
-    | NEWLINE
+        : PackageStmt NEWLINE 
+        | FunctionDeclStmt
+        | NEWLINE
 ;
 
 PackageStmt
-    :
+        : PACKAGE IDENT		{printf("hello world\n");}
 ;
 
 FunctionDeclStmt
-    :
+        : FuncOpen '(' ParameterList ')' ReturnType FuncBlock
+;
+
+
+FuncOpen
+        : FUNC IDENT
 ;
 
 Expression
 	: UnaryExpr
-	| Expression binary_op Expression
+	| Expression binary_op Expression {	if	(strcmp($<type>1, "bool") == 0) $<type>$ ="bool";
+						else if (strcmp($<type>1, "int" ) == 0)$<type>$ ="int";
+						else 					$<type>$ ="float";}
 ;
 
 UnaryExpr
@@ -100,38 +116,38 @@ UnaryExpr
 	| unary_op UnaryExpr
 ;
 
-binary
-	: "||"
-	| "&&"
+binary_op
+	: LOR
+	| LAND
 	| cmp_op
 	| add_op
 	| mul_op
 ;
 
 cmp_op
-	: "=="
-	| "!="
-	| "<"
-	| "<="
-	| ">"
-	| ">="
+	: EQ
+	| NEQ
+	| '<'
+	| LEQ
+	| '>'
+	| GEQ
 ;
 
 add_op
-	: "+"
-	| "-"
+	: '+'	{ $<value.s_val>$="+";  printf("ADD\n"); }
+	| '-'	{ $<value.s_val>$="-";  printf("SUB\n"); }
 ;
 
 mul_op
-	: "*"
-	| "/"
-	| "%"
+	: '*'
+	| '/'
+	| '%'
 ;
 
 unary_op
-	: "+"
-	| "-"
-	| "!"
+	: '+'
+	| '-'
+	| '!'
 ;
 
 PrimaryExpr
@@ -140,21 +156,25 @@ PrimaryExpr
 	| ConversionExpr
 ;
 
+IndexExpr
+	: PrimaryExpr '[' Expression ']'
+;
+
 Operand
 	: Literal
-	| identifier
-	| "(" Expression ")"
+	| IDENT
+	| '(' Expression ')'
 ;
 
 Literal
-	: int_lit
-	| float_lit
-	| bool_lit
-	| string_lit
+	: INT_LIT
+	| FLOAT_LIT
+	| BOOL_LIT
+	| '"' STRING_LIT '"'
 ;
 
 ConversionExpr
-	: Type "(" Expression ")"
+	: Type '(' Expression ')'
 ;
 
 Statement
@@ -177,8 +197,8 @@ SimpleStmt
 ;
 
 DeclarationStmt
-	: "var" identifier Type
-	| "var" identifier Type "=" Expression
+	: VAR IDENT Type
+	| VAR IDENT Type '=' Expression
 ;
 
 AssignmentStmt
@@ -186,12 +206,12 @@ AssignmentStmt
 ;
 
 assign_op
-	: "="
-	| "+="
-	| "-="
-	| "*="
-	| "/="
-	| "%="
+	: '='
+	| ADD_ASSIGN
+	| SUB_ASSIGN
+	| MUL_ASSIGN
+	| DIV_ASSIGN
+	| MOD_ASSIGN
 ;
 
 ExpressionStmt
@@ -204,7 +224,7 @@ IncDecStmt
 ;
 
 Block
-	: "{" StatementList "}"
+	: '{' StatementList '}'
 ;
 
 StatementList 
@@ -213,9 +233,9 @@ StatementList
 ;
 
 IfStmt
-	: "if" Condition Block
-	| "if" Condition Block "else" IfStmt
-	| "if" Condition Block "else" Block
+	: IF Condition Block
+	| IF Condition Block ELSE IfStmt
+	| IF Condition Block ELSE Block
 ;
 
 Condition
@@ -223,12 +243,12 @@ Condition
 ;
 
 ForStmt
-	: "for" ForClause Block
-	| "for" Condition Block
+	: FOR ForClause Block
+	| FOR Condition Block
 ;
 
 ForClause
-	: InitStmt ";" Condition ";" PostStmt
+	: InitStmt ';' Condition ';' PostStmt
 ;
 
 InitStmt
@@ -240,36 +260,26 @@ PostStmt
 ;
 
 SwitchStmt
-	: "switch" Expression Block
+	: SWITCH Expression Block
 ;
 
 CaseStmt
-	: "case" INT_LIT ":" Block
-	| DEFAULT ":" Block
+	: CASE INT_LIT ':' Block
+	| DEFAULT ':' Block
 ;
 
-GlobalStatement
-	: PackageStmt NEWLINE 
-	| FunctionDeclStmt
-	| NEWLINE
-;
-
-PackageStmt
-	: PACKAGE IDENT
-;
-
-FunctionDeclStmt
-	: FuncOpen "(" ParameterList ")" ReturnType FuncBlock
+ReturnType
+	: Type
 ;
 
 ParameterList
-	: %empty
+	: 
 	| IDENT Type
-	| ParameterList "," IDENT Type
+	| ParameterList ',' IDENT Type
 ;
 
 FuncBlock
-	: "{" StatementList "}"
+	: '{' StatementList '}'
 ;
 
 ReturnStmt
@@ -278,8 +288,8 @@ ReturnStmt
 ;
 
 PrintStmt
-	: "print" "(" Expression ")"
-	| "println" "(" Expression ")"
+	: PRINT '(' Expression ')'
+	| PRINTLN '(' Expression ')'
 ;
 
 %%

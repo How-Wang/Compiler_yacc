@@ -36,7 +36,7 @@ fnumber ({digit}*\.{digit}+)
 <STR>"\""   { BEGIN(INITIAL);
                 return '"';
             }
-<STR>[^\"]* { yylval.s_val = strdup(yytext);
+<STR>[^\"]* { yylval.value.s_val = strdup(yytext);
                 return STRING_LIT;
             }
 "+"         { return '+'; }
@@ -49,15 +49,15 @@ fnumber ({digit}*\.{digit}+)
 ">"         { return '>'; }
 "<"         { return '<'; }
 ">="        { return GEQ; }
-"<="        { return XXX; }
-"=="        { return XXX; }
-"!="        { return XXX; }
+"<="        { return LEQ; }
+"=="        { return EQ; }
+"!="        { return NEQ; }
 "="         { return '='; }
 "+="        { return ADD_ASSIGN; }
 "-="        { return SUB_ASSIGN; }
-"*="        { return XXX; }
-"/="        { return XXX; }
-"%="        { return XXX; }
+"*="        { return MUL_ASSIGN; }
+"/="        { return DIV_ASSIGN; }
+"%="        { return MOD_ASSIGN; }
 "&&"        { return LAND; }
 "||"        { return LOR; }
 "!"         { return '!'; }
@@ -71,22 +71,24 @@ fnumber ({digit}*\.{digit}+)
 ","         { return ','; }
 "\n"        { return NEWLINE; }
 "print"     { return PRINT; }
-"println"   { return XXX; }
+"println"   { return PRINTLN; }
 "if"        { return IF; }
+"package"   { return PACKAGE;}
+"func"	    { return FUNC;}
+"switch"    { return SWITCH;}
+"case"	    { return CASE;}
 "else"      { return ELSE; }
 "for"       { return FOR; }
 "int32"     { return INT; }
 "float32"   { return FLOAT;}
 "string"    { return STRING; }
 "bool"      { return BOOL; }
-"true"      { XXX; }
-"false"     { XXX; }
+"true"      { yylval.type = "bool"; yylval.value.b_val = true; return BOOL_LIT; }
+"false"     { yylval.type = "bool"; yylval.value.b_val = false; return BOOL_LIT; }
 "var"       { return VAR; }
-{inumber}   { yylval.i_val = atoi(yytext);
-                return INT_LIT;
-            }
-{fnumber}   { XXX; }
-{id}        { XXX; }
+{inumber}   { yylval.type = "int"; yylval.value.i_val = atoi(yytext); return INT_LIT;}
+{fnumber}   { yylval.type = "float"; yylval.value.f_val = atof(yytext); return FLOAT_LIT;}
+{id}        { yylval.type = "sting"; yylval.value.s_val = strdup(yytext); return IDENT;}
 <<EOF>>     { static int once = 0;
                 if (once++) {
                     yyterminate();
