@@ -1182,7 +1182,7 @@ YY_RULE_SETUP
 case 58:
 YY_RULE_SETUP
 #line 91 "compiler_hw2.l"
-{ yylval.item.type = "string"; yylval.item.value.s_val = strdup(yytext); return IDENT;}
+{ yylval.item.value.s_val = strdup(yytext); return IDENT;}
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(CMT):

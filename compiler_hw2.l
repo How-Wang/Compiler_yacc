@@ -88,7 +88,7 @@ fnumber ({digit}*\.{digit}+)
 "var"       { return VAR; }
 {inumber}   { yylval.item.type = "int"; yylval.item.value.i_val = atoi(yytext); return INT_LIT;}
 {fnumber}   { yylval.item.type = "float"; yylval.item.value.f_val = atof(yytext); return FLOAT_LIT;}
-{id}        { yylval.item.type = "string"; yylval.item.value.s_val = strdup(yytext); return IDENT;}
+{id}        { yylval.item.value.s_val = strdup(yytext); return IDENT;}
 <<EOF>>     { static int once = 0;
                 if (once++) {
                     yyterminate();

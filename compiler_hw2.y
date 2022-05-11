@@ -132,7 +132,7 @@ FuncParameter
 
 FuncOpen
         : FUNC IDENT {
-			printf("function: %s\n", $<item.value.s_val>2);
+			printf("func: %s\n", $<item.value.s_val>2);
 			create_symbol();
 			str_funct_name = (char *)malloc( strlen($<item.value.s_val>2) + 1);
 			strcpy(str_funct_name, $<item.value.s_val>2);
@@ -148,10 +148,17 @@ FunctionUpBlock
 ;
 
 Expression
-	: UnaryExpr			 {$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;}
-	| Expression binary_op Expression {if		(strcmp($<item.type>1, "bool") == 0) $<item.type>$ ="bool";
-					   else if 	(strcmp($<item.type>1, "int" ) == 0) $<item.type>$ ="int32";
-					   else 					$<item.type>$ ="float32";}
+	: UnaryExpr			 {$<item.value>$ = $<item.value>1;/* $<item.type>$ = $<item.type>1;*/
+					 // printf("Unary to Express %s\n", $<item.type>1);
+					   if           (strcmp($<item.type>1, "bool") == 0) $<item.type>$ ="bool";
+                                           else if      (strcmp($<item.type>1, "int" ) == 0) $<item.type>$ ="int32";
+                                           else                                         $<item.type>$ ="float32";}
+	| Expression binary_op Expression {//printf("2Express to Express %s\n", $<item.type>1);
+					   $<item.type>$ = $<item.type>1;
+					   printf("%s\n", $<item.value.s_val>2);
+					   /*if		(strcmp($<item.type>1, "bool") == 0) $<item.type>$ ="bool";
+					   else if 	(strcmp($<item.type>1, "int32" ) == 0) $<item.type>$ ="int32";
+					   else 					$<item.type>$ ="float32";*/}
 ;
 
 UnaryExpr
@@ -163,7 +170,7 @@ binary_op
 	: LOR
 	| LAND
 	| cmp_op
-	| add_op
+	| add_op { $<item.value.s_val>$= $<item.value.s_val>1; }
 	| mul_op
 ;
 
@@ -177,14 +184,14 @@ cmp_op
 ;
 
 add_op
-	: '+'	{ $<item.value.s_val>$="+";  printf("ADD\n"); }
-	| '-'	{ $<item.value.s_val>$="-";  printf("SUB\n"); }
+	: '+'	{ $<item.value.s_val>$="ADD"; }
+	| '-'	{ $<item.value.s_val>$="SUB"; }
 ;
 
 mul_op
-	: '*'   { $<item.value.s_val>$="*";  printf("MUL\n"); }	  
-	| '/'   { $<item.value.s_val>$="/";  printf("QUO\n"); }
-	| '%'   { $<item.value.s_val>$="%";  printf("REM\n"); }
+	: '*'   { $<item.value.s_val>$="MUL"; /* printf("MUL\n"); */}	  
+	| '/'   { $<item.value.s_val>$="QUO"; /* printf("QUO\n"); */}
+	| '%'   { $<item.value.s_val>$="REM"; /* printf("REM\n"); */}
 ;
 
 unary_op
@@ -205,11 +212,16 @@ IndexExpr
 
 Operand
 	: Literal 	{ $<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;
-			 printf("hello operand literal %s\n",$<item.type>1); 
+			 /* printf("hello operand literal %s\n",$<item.type>1); */
 			}
-	| IDENT {	symtable_type* tmp_table = lookup_symbol($<item.value.s_val>1);
+
+	| IDENT {	$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;
+			/*printf("hello operand IDENT %s\n",$<item.type>1);*/
+			symtable_type* tmp_table = lookup_symbol($<item.value.s_val>1);
 			printf("IDENT (name=%s, address=%d)\n",$<item.value.s_val>1,tmp_table->address);}
-	| '(' Expression ')'
+
+	| '(' Expression ')' {$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;
+				/*printf("hello operand literal %s\n",$<item.type>1);*/}
 ;
 
 Literal
@@ -217,7 +229,7 @@ Literal
 				printf("INT_LIT %d\n",         $<item.value.i_val>$);
 				$<item.value>$= $<item.value>1;
 				$<item.type>$ = $<item.type>1;
-				printf("show INT LIT return type %s\n",$<item.type>1);
+				/*printf("show INT LIT return type %s\n",$<item.type>1);*/
 			}
 	| FLOAT_LIT	{	printf("FLOAT_LIT %f\n",       $<item.value.f_val>$);
                                  $<item.value>$= $<item.value>1;
@@ -468,6 +480,7 @@ static void dump_symbol() {
 		printf("%-10d%-10s%-10s%-10d%-10d%-10s\n",tmp_table->index, tmp_table->name, tmp_table->type, tmp_table->address, tmp_table->lineno, tmp_table->func_sig );
 		tmp_table = tmp_table->next;
 	}
+	printf("\n");
 	// change head by -1
 	stack_head = stack_head-> next;
 	global_level --;
