@@ -929,7 +929,7 @@ case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
 #line 39 "compiler_hw2.l"
-{ yylval.item.value.s_val = strdup(yytext);
+{ yylval.item.type="string";yylval.item.value.s_val = strdup(yytext);
                 return STRING_LIT;
             }
 	YY_BREAK
@@ -1172,12 +1172,12 @@ YY_RULE_SETUP
 case 56:
 YY_RULE_SETUP
 #line 89 "compiler_hw2.l"
-{ yylval.item.type = "int"; yylval.item.value.i_val = atoi(yytext); return INT_LIT;}
+{ yylval.item.type = "int32"; yylval.item.value.i_val = atoi(yytext); return INT_LIT;}
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
 #line 90 "compiler_hw2.l"
-{ yylval.item.type = "float"; yylval.item.value.f_val = atof(yytext); return FLOAT_LIT;}
+{ yylval.item.type = "float32"; yylval.item.value.f_val = atof(yytext); return FLOAT_LIT;}
 	YY_BREAK
 case 58:
 YY_RULE_SETUP

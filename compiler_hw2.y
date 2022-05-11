@@ -147,38 +147,66 @@ FunctionUpBlock
 	: '{' 				{ insert_symbol(str_funct_name,"func","()V"); }
 ;
 
-Expression
-	: UnaryExpr			 {$<item.value>$ = $<item.value>1;
-					   // printf("Unary to Express %s\n", $<item.type>1);
-					   if           (strcmp($<item.type>1, "bool") == 0) $<item.type>$ ="bool";
-                                           else if      (strcmp($<item.type>1, "int" ) == 0) $<item.type>$ ="int32";
-                                           else                                         $<item.type>$ ="float32";}
-	| Expression binary_op Expression {//printf("2Express to Express %s\n", $<item.type>1);
-					   $<item.type>$ = $<item.type>1;
-					   printf("%s\n", $<item.value.s_val>2);
-					   }
-;
-
 UnaryExpr
-	: PrimaryExpr			{$<item.value>$ = $<item.value>1; 	$<item.type>$ = $<item.type>1;}
-	| unary_op UnaryExpr		{printf("%s\n", $<item.value.s_val>1); $<item.type>$ = $<item.type>2;}
+	: PrimaryExpr
+	| UnaryExpr INC {printf("INC\n");}
+	| UnaryExpr DEC {printf("DEC\n");}
+	| unary_op cast_expression {printf("%s\n", $<item.value.s_val>1);}
 ;
 
-binary_op
-	: LOR    { $<item.value.s_val>$="LOR"; }
-	| LAND	 { $<item.value.s_val>$="LAND"; }
-	| cmp_op { $<item.value.s_val>$= $<item.value.s_val>1; }
-	| add_op { $<item.value.s_val>$= $<item.value.s_val>1; }
-	| mul_op { $<item.value.s_val>$= $<item.value.s_val>1; }
+cast_expression
+	: UnaryExpr
+	| '(' Type ')' cast_expression
+
+multiplicative_expression
+	: cast_expression
+	| multiplicative_expression mul_op cast_expression {printf("%s\n", $<item.value.s_val>2);}
 ;
 
-cmp_op
-	: EQ 	{ $<item.value.s_val>$="EQ"; }
-	| NEQ   { $<item.value.s_val>$="NEQ"; }
-	| '<'   { $<item.value.s_val>$="LTR"; }
-	| LEQ   { $<item.value.s_val>$="LEQ"; }
-	| '>'   { $<item.value.s_val>$="GTR"; }
-	| GEQ   { $<item.value.s_val>$="GEQ"; }
+additive_expression
+	: multiplicative_expression
+	| additive_expression add_op multiplicative_expression {printf("%s\n", $<item.value.s_val>2);}
+;
+
+relational_expression
+	: additive_expression
+	| relational_expression rel_op additive_expression {printf("%s\n", $<item.value.s_val>2);}
+;
+
+equality_expression
+	: relational_expression
+	| equality_expression equ_op relational_expression {printf("%s\n", $<item.value.s_val>2);}
+;
+
+logical_and_expression
+	: equality_expression
+	| logical_and_expression LAND equality_expression {printf("LAND\n");}
+;
+
+logical_or_expression
+	: logical_and_expression
+	| logical_or_expression LOR logical_and_expression {printf("LOR\n"); $<item.type>$ = "bool";}
+;
+
+assignment_expression
+	: logical_or_expression
+	| UnaryExpr assign_op assignment_expression {printf("%s\n", $<item.value.s_val>2);}
+;
+
+Expression
+	: assignment_expression 
+;
+
+rel_op
+	: '<'   { $<item.value.s_val>$="LTR"; }
+	| LEQ 
+	| '>'	{ $<item.value.s_val>$="GTR"; }
+	| GEQ
+;
+
+equ_op
+	: EQ	{$<item.value.s_val>$="EQL";}
+	| NEQ	{$<item.value.s_val>$="NEQ";}
 ;
 
 add_op
@@ -204,14 +232,12 @@ PrimaryExpr
 ;
 
 Operand
-	: Literal 	{ $<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;
-			 /* printf("hello operand literal %s\n",$<item.type>1); */
-			}
+	: Literal 	{ $<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;}
 
 	| IDENT {	$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;
-			/*printf("hello operand IDENT %s\n",$<item.type>1);*/
 			symtable_type* tmp_table = lookup_symbol($<item.value.s_val>1);
-			printf("IDENT (name=%s, address=%d)\n",$<item.value.s_val>1,tmp_table->address);}
+			printf("IDENT (name=%s, address=%d)\n",$<item.value.s_val>1,tmp_table->address);
+			$<item.type>$ = tmp_table->type;}
 
 	| '(' Expression ')' {$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;
 				/*printf("hello operand literal %s\n",$<item.type>1);*/}
@@ -221,28 +247,37 @@ Literal
 	: INT_LIT	{
 				printf("INT_LIT %d\n",         $<item.value.i_val>$);
 				$<item.value>$= $<item.value>1;
-				$<item.type>$ = $<item.type>1;
+				$<item.type>$ = "int32";
 				/*printf("show INT LIT return type %s\n",$<item.type>1);*/
 			}
 	| FLOAT_LIT	{	printf("FLOAT_LIT %f\n",       $<item.value.f_val>$);
                                  $<item.value>$= $<item.value>1;
-                                 $<item.type>$ = $<item.type>1;
+                                 $<item.type>$ = "float32";
                          }
 
 	| BOOL_LIT	{
-				if($<item.value.b_val>$ == true) printf("BOOL_LIT TRUE\n");
-				else printf("BOOL_LIT FALSE\n");
+				if($<item.value.b_val>$ == true) printf("TRUE 1\n");
+				else printf("FALSE 0\n");
 				$<item.value>$= $<item.value>1;
-				$<item.type>$ = $<item.type>1;
+				$<item.type>$ = "bool";
 			}
-	| '"' STRING_LIT '"'{printf("STRING_LIT %s\n",        $<item.value.s_val>$);
-				$<item.value>$= $<item.value>1;
-				$<item.type>$ = $<item.type>1;
+	| '"' STRING_LIT '"'{printf("STRING_LIT %s\n", $<item.value.s_val>2);
+				$<item.value>$= $<item.value>2;
+				$<item.type>$ = "string";
 			}
 ;
 
 ConversionExpr
-	: Type '(' Expression ')'
+	: Type '(' Expression ')' {
+		if (strcmp($<item.type>3, "float32") == 0 && strcmp($<item.value.s_val>1, "int32") == 0){
+            		printf("f2i\n");
+            		$<item.type>$ = "int32";
+        	}
+        	else if (strcmp($<item.type>3, "int32") == 0 && strcmp($<item.value.s_val>1, "float32") == 0){
+            		printf("i2f\n");
+            		$<item.type>$ = "float32";
+        	}
+		}
 ;
 
 Statement
@@ -259,41 +294,33 @@ Statement
 ;
 
 SimpleStmt
-	: AssignmentStmt
-	| ExpressionStmt
-	| IncDecStmt
+	: ExpressionStmt
 ;
 
 DeclarationStmt
-	: VAR IDENT Type		
+	: VAR IDENT Type	{ insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-");}	
 	| VAR IDENT Type '=' Expression { insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-");}
 ;
 
-AssignmentStmt
-	: Expression assign_op Expression
-;
-
 assign_op
-	: '='
-	| ADD_ASSIGN
-	| SUB_ASSIGN
-	| MUL_ASSIGN
-	| DIV_ASSIGN
-	| MOD_ASSIGN
+	: '=' { $<item.value.s_val>$="ASSIGN"; }
+	| ADD_ASSIGN { $<item.value.s_val>$="ADD"; }
+	| SUB_ASSIGN { $<item.value.s_val>$="SUB"; }
+	| MUL_ASSIGN { $<item.value.s_val>$="MUL"; }
+	| DIV_ASSIGN { $<item.value.s_val>$="QUO"; }
+	| MOD_ASSIGN { $<item.value.s_val>$="REM"; }
 ;
 
 ExpressionStmt
 	: Expression
 ;
 
-IncDecStmt
-	: Expression INC	{ printf("INC\n");}
-	| Expression DEC	{ printf("DEC\n");}
-;
-
 Block
-	: '{' StatementList '}'
+	: BlockUp StatementList '}' {dump_symbol();}
 ;
+BlockUp
+	: '{' { create_symbol();}
+
 
 StatementList 
 	: Statement StatementList
