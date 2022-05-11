@@ -148,39 +148,37 @@ FunctionUpBlock
 ;
 
 Expression
-	: UnaryExpr			 {$<item.value>$ = $<item.value>1;/* $<item.type>$ = $<item.type>1;*/
-					 // printf("Unary to Express %s\n", $<item.type>1);
+	: UnaryExpr			 {$<item.value>$ = $<item.value>1;
+					   // printf("Unary to Express %s\n", $<item.type>1);
 					   if           (strcmp($<item.type>1, "bool") == 0) $<item.type>$ ="bool";
                                            else if      (strcmp($<item.type>1, "int" ) == 0) $<item.type>$ ="int32";
                                            else                                         $<item.type>$ ="float32";}
 	| Expression binary_op Expression {//printf("2Express to Express %s\n", $<item.type>1);
 					   $<item.type>$ = $<item.type>1;
 					   printf("%s\n", $<item.value.s_val>2);
-					   /*if		(strcmp($<item.type>1, "bool") == 0) $<item.type>$ ="bool";
-					   else if 	(strcmp($<item.type>1, "int32" ) == 0) $<item.type>$ ="int32";
-					   else 					$<item.type>$ ="float32";*/}
+					   }
 ;
 
 UnaryExpr
-	: PrimaryExpr			{$<item.value>$ = $<item.value>1;$<item.type>$ = $<item.type>1;}
-	| unary_op UnaryExpr
+	: PrimaryExpr			{$<item.value>$ = $<item.value>1; 	$<item.type>$ = $<item.type>1;}
+	| unary_op UnaryExpr		{printf("%s\n", $<item.value.s_val>1); $<item.type>$ = $<item.type>2;}
 ;
 
 binary_op
-	: LOR
-	| LAND
-	| cmp_op
+	: LOR    { $<item.value.s_val>$="LOR"; }
+	| LAND	 { $<item.value.s_val>$="LAND"; }
+	| cmp_op { $<item.value.s_val>$= $<item.value.s_val>1; }
 	| add_op { $<item.value.s_val>$= $<item.value.s_val>1; }
-	| mul_op
+	| mul_op { $<item.value.s_val>$= $<item.value.s_val>1; }
 ;
 
 cmp_op
-	: EQ
-	| NEQ
-	| '<'
-	| LEQ
-	| '>'
-	| GEQ
+	: EQ 	{ $<item.value.s_val>$="EQ"; }
+	| NEQ   { $<item.value.s_val>$="NEQ"; }
+	| '<'   { $<item.value.s_val>$="LTR"; }
+	| LEQ   { $<item.value.s_val>$="LEQ"; }
+	| '>'   { $<item.value.s_val>$="GTR"; }
+	| GEQ   { $<item.value.s_val>$="GEQ"; }
 ;
 
 add_op
@@ -189,25 +187,20 @@ add_op
 ;
 
 mul_op
-	: '*'   { $<item.value.s_val>$="MUL"; /* printf("MUL\n"); */}	  
-	| '/'   { $<item.value.s_val>$="QUO"; /* printf("QUO\n"); */}
-	| '%'   { $<item.value.s_val>$="REM"; /* printf("REM\n"); */}
+	: '*'   { $<item.value.s_val>$="MUL"; }	  
+	| '/'   { $<item.value.s_val>$="QUO"; }
+	| '%'   { $<item.value.s_val>$="REM"; }
 ;
 
 unary_op
-	: '+'
-	| '-'
-	| '!'
+	: '+'  { $<item.value.s_val>$="POS"; }
+	| '-'  { $<item.value.s_val>$="NEG"; }
+	| '!'  { $<item.value.s_val>$="NOT"; }
 ;
 
 PrimaryExpr
 	: Operand	{$<item.value>$ = $<item.value>1; $<item.type>$=$<item.type>1; }
-	| IndexExpr
 	| ConversionExpr
-;
-
-IndexExpr
-	: PrimaryExpr '[' Expression ']'
 ;
 
 Operand
