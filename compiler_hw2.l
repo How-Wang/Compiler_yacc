@@ -77,6 +77,7 @@ fnumber ({digit}*\.{digit}+)
 "func"	    { return FUNC;}
 "switch"    { return SWITCH;}
 "case"	    { return CASE;}
+"default"   { return DEFAULT;}
 "else"      { return ELSE; }
 "for"       { return FOR; }
 "int32"     { return INT; }

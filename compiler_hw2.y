@@ -359,8 +359,12 @@ SwitchStmt
 ;
 
 CaseStmt
-	: CASE INT_LIT ':' Block
-	| DEFAULT ':' Block
+	: CaseUp Block
+	| DEFAULT Block
+;
+
+CaseUp
+	: CASE INT_LIT	{printf("case %d\n", $<item.value.i_val>2);}
 ;
 
 ReturnType
