@@ -74,13 +74,12 @@ extern int yydebug;
     PACKAGE = 284,
     RETURN = 285,
     PRINTLN = 286,
-    Type = 287,
-    DEFAULT = 288,
-    INT_LIT = 289,
-    STRING_LIT = 290,
-    BOOL_LIT = 291,
-    FLOAT_LIT = 292,
-    IDENT = 293
+    DEFAULT = 287,
+    INT_LIT = 288,
+    STRING_LIT = 289,
+    BOOL_LIT = 290,
+    FLOAT_LIT = 291,
+    IDENT = 292
   };
 #endif
 /* Tokens.  */
@@ -113,20 +112,19 @@ extern int yydebug;
 #define PACKAGE 284
 #define RETURN 285
 #define PRINTLN 286
-#define Type 287
-#define DEFAULT 288
-#define INT_LIT 289
-#define STRING_LIT 290
-#define BOOL_LIT 291
-#define FLOAT_LIT 292
-#define IDENT 293
+#define DEFAULT 287
+#define INT_LIT 288
+#define STRING_LIT 289
+#define BOOL_LIT 290
+#define FLOAT_LIT 291
+#define IDENT 292
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 
 union YYSTYPE
 {
-#line 62 "compiler_hw2.y" /* yacc.c:1909  */
+#line 61 "compiler_hw2.y" /* yacc.c:1909  */
 
     union{
 	int i_val;
@@ -137,7 +135,7 @@ union YYSTYPE
     char * type;
     /* ... */
 
-#line 141 "y.tab.h" /* yacc.c:1909  */
+#line 139 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

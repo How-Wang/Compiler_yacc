@@ -42,15 +42,14 @@
     };
 
     static void create_symbol();
-    static void insert_symbol();
-    static symtable_type* Lookup_symbol();
+    static void insert_symbol(char* name, char* type, char* Func_sig);
+    static symtable_type* lookup_symbol(char * name);
     static void dump_symbol();
     /* Global variables */
     bool HAS_ERROR = false;
 
-
-
-
+    char *str_funct_name;
+    char *funct_parameter;
 %}
 
 %error-verbose
@@ -77,7 +76,7 @@
 %token ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN
 %token IF ELSE FOR SWITCH CASE FUNC
 %token PRINT PACKAGE RETURN PRINTLN
-%token Type 
+/*%token Type*/ 
 
 %token DEFAULT
 
@@ -90,7 +89,7 @@
 
 
 /* Nonterminal with return, which need to sepcify type */
-%type <s_val> Type
+%type <s_val> ReturnType Type INT FLOAT BOOL STRING 
 
 /* Yacc will start at this nonterminal */
 %start Program
@@ -99,7 +98,7 @@
 %%
 
 Program
-    	: GlobalStatementList
+    	: GlobalStatementList	{dump_symbol();}
 ;
 
 GlobalStatementList 
@@ -114,27 +113,48 @@ GlobalStatement
 ;
 
 PackageStmt
-        : PACKAGE IDENT		{printf("hello world\n");}
+        : PACKAGE IDENT		{create_symbol(); printf("package: %s\n", $<value.s_val>2);}
 ;
 
 FunctionDeclStmt
-        : FuncOpen '(' ParameterList ')' ReturnType FuncBlock {printf("hello 99\n");}
+        : FuncOpen FuncParameter ReturnType FuncBlock
 ;
 
+FuncParameter
+	: '(' ParameterList ')'  { int size = sizeof(char)*2 + sizeof($<value.s_val>2)+1;
+				funct_parameter = (char*)malloc(sizeof(size));
+					strcpy(funct_parameter, "()V"); // Here need to change!!!!!!
+					//funct_parameter[size-1]= ')';
+					//strcpy(funct_parameter+1,$<value.s_val>2);
+					printf("func_signature: %s\n",funct_parameter);}
+;
 
 FuncOpen
-        : FUNC IDENT
+        : FUNC IDENT {
+			printf("function: %s\n", $<value.s_val>2);
+			create_symbol();
+			str_funct_name = (char *)malloc( strlen($<value.s_val>2) + 1);
+			strcpy(str_funct_name, $<value.s_val>2);
+		     }
+;
+
+FuncBlock
+	: FunctionUpBlock StatementList '}' { dump_symbol(); }
+;
+
+FunctionUpBlock
+	: '{' 				{ insert_symbol(str_funct_name,"func","()V"); }
 ;
 
 Expression
-	: UnaryExpr
+	: UnaryExpr			 /*{$$ = $1;}*/
 	| Expression binary_op Expression {if		(strcmp($<type>1, "bool") == 0) $<type>$ ="bool";
-					   else if 	(strcmp($<type>1, "int" ) == 0) $<type>$ ="int";
-					   else 					$<type>$ ="float";}
+					   else if 	(strcmp($<type>1, "int" ) == 0) $<type>$ ="int32";
+					   else 					$<type>$ ="float32";}
 ;
 
 UnaryExpr
-	: PrimaryExpr
+	: PrimaryExpr			/*{$$ = $1;}*/
 	| unary_op UnaryExpr
 ;
 
@@ -173,7 +193,7 @@ unary_op
 ;
 
 PrimaryExpr
-	: Operand
+	: Operand	/*{$$ = $1;}*/
 	| IndexExpr
 	| ConversionExpr
 ;
@@ -183,16 +203,20 @@ IndexExpr
 ;
 
 Operand
-	: Literal
-	| IDENT
+	: Literal /*{$$ = $1;}*/
+	| IDENT {	symtable_type* tmp_table = lookup_symbol($<value.s_val>1);
+			printf("IDENT (name=%s, address=%d)\n",$<value.s_val>1,tmp_table->address);}
 	| '(' Expression ')'
 ;
 
 Literal
-	: INT_LIT
-	| FLOAT_LIT
-	| BOOL_LIT
-	| '"' STRING_LIT '"'
+	: INT_LIT	{printf("INT_LIT %d\n",         $<value.i_val>$);}
+	| FLOAT_LIT	{printf("FLOAT_LIT %f\n",       $<value.f_val>$);}
+	| BOOL_LIT	{
+				if($<value.b_val>$ == true) printf("BOOL_LIT TRUE\n");
+				else printf("BOOL_LIT FALSE\n");
+			}
+	| '"' STRING_LIT '"'{printf("STRING_LIT %s\n",        $<value.s_val>$);}
 ;
 
 ConversionExpr
@@ -219,8 +243,8 @@ SimpleStmt
 ;
 
 DeclarationStmt
-	: VAR IDENT Type
-	| VAR IDENT Type '=' Expression
+	: VAR IDENT Type		
+	| VAR IDENT Type '=' Expression { insert_symbol($<value.s_val>2, $<value.s_val>3, "-");}
 ;
 
 AssignmentStmt
@@ -291,18 +315,23 @@ CaseStmt
 ;
 
 ReturnType
-	: Type
+	: 		{$<value.s_val>$ = "V";}
+	| Type		{$<value.s_val>$ = $<value.s_val>1;}
+;
+
+Type
+	: INT		{$<value.s_val>$ = "int32";}
+	| FLOAT		{$<value.s_val>$ = "float32";}
+	| STRING	{$<value.s_val>$ = "string";}
+	| BOOL		{$<value.s_val>$ = "bool";}
 ;
 
 ParameterList
-	: 
-	| IDENT Type
-	| ParameterList ',' IDENT Type
+	: 		{ $<value.s_val>$ = ""; }
+	| IDENT Type	 { $<value.s_val>$ = $<value.s_val>2;}
+	| ParameterList ',' IDENT Type  { strcat($<value.s_val>$, $<value.s_val>4); }
 ;
 
-FuncBlock
-	: '{' StatementList '}'
-;
 ReturnStmt
 	: RETURN Expression
 	| RETURN
@@ -352,33 +381,47 @@ static void create_symbol() {
 }
 
 static void insert_symbol(char* name, char* type, char* Func_sig) {
-    	printf("> Insert `%s` (addr: %d) to scope level %d\n", name, global_address, global_level);
+    	if(strcmp(type,"func")==0)
+		printf("> Insert `%s` (addr: %d) to scope level %d\n", name, global_address, global_level-1);
+	else
+		printf("> Insert `%s` (addr: %d) to scope level %d\n", name, global_address, global_level);
 	// Create a new table
+
 	symtable_type* tmp_table = (symtable_type *)malloc(sizeof(symtable_type));
-	tmp_table -> lineno = yylineno;
+	
+	tmp_table -> lineno = strcmp(type, "func")? yylineno : yylineno+1 ;
 	tmp_table -> level = global_level;
 	tmp_table -> address = global_address;
 	global_address ++;
-
+	
 	tmp_table -> name = (char*) malloc (strlen(name) + 1);
         strcpy(tmp_table-> name, name);
 	tmp_table -> func_sig = (char*)malloc(strlen(Func_sig) +1);
 	strcpy(tmp_table->func_sig, Func_sig);
-
+	tmp_table -> type = (char*)malloc(strlen(type) +1);
+        strcpy(tmp_table->type, type);
+	// Find the correct stack head
+	symtable_stack_type* tmp_head = (symtable_stack_type*)malloc(0);
+	if(strcmp(type,"func")==0)
+		tmp_head = stack_head->next;
+	else{
+		tmp_head = stack_head;
+	}
 	// Make table to be the last one in head-stack
-	if(stack_head->table){
+	if(!tmp_head->table){
 		tmp_table -> index = 0;
-		stack_head -> table = tmp_table;
+		tmp_head -> table = tmp_table;
 	}
 	else{
 		int last_index = 1;
-		symtable_type* last_table = stack_head -> table;
+		symtable_type* last_table = tmp_head -> table;
 		while(last_table -> next){
 			last_table = last_table -> next;
 			last_index ++;
 		}
-		last_table -> index = last_index;
+		tmp_table -> index = last_index;
 		last_table -> next = tmp_table;
+		//tmp_tabletmp_table -> index = last_index;
 	}
 }
 
