@@ -929,7 +929,7 @@ case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
 #line 39 "compiler_hw2.l"
-{ yylval.value.s_val = strdup(yytext);
+{ yylval.item.value.s_val = strdup(yytext);
                 return STRING_LIT;
             }
 	YY_BREAK
@@ -1157,12 +1157,12 @@ YY_RULE_SETUP
 case 53:
 YY_RULE_SETUP
 #line 86 "compiler_hw2.l"
-{ yylval.type = "bool"; yylval.value.b_val = true; return BOOL_LIT; }
+{ yylval.item.type = "bool"; yylval.item.value.b_val = true; return BOOL_LIT; }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
 #line 87 "compiler_hw2.l"
-{ yylval.type = "bool"; yylval.value.b_val = false; return BOOL_LIT; }
+{ yylval.item.type = "bool"; yylval.item.value.b_val = false; return BOOL_LIT; }
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
@@ -1172,17 +1172,17 @@ YY_RULE_SETUP
 case 56:
 YY_RULE_SETUP
 #line 89 "compiler_hw2.l"
-{ yylval.type = "int"; yylval.value.i_val = atoi(yytext); return INT_LIT;}
+{ yylval.item.type = "int"; yylval.item.value.i_val = atoi(yytext); return INT_LIT;}
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
 #line 90 "compiler_hw2.l"
-{ yylval.type = "float"; yylval.value.f_val = atof(yytext); return FLOAT_LIT;}
+{ yylval.item.type = "float"; yylval.item.value.f_val = atof(yytext); return FLOAT_LIT;}
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
 #line 91 "compiler_hw2.l"
-{ yylval.type = "sting"; yylval.value.s_val = strdup(yytext); return IDENT;}
+{ yylval.item.type = "string"; yylval.item.value.s_val = strdup(yytext); return IDENT;}
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(CMT):

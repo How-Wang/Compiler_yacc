@@ -59,14 +59,15 @@
  *  - you can add new fields if needed.
  */
 %union {
-    union{
-	int i_val;
-    	float f_val;
-    	char *s_val;
-    	bool b_val;	
-	}value;
-    char * type;
-    /* ... */
+    struct{
+	union{
+ 		int i_val;
+		float f_val;
+		char *s_val;
+		bool b_val;
+        }value;
+    	char * type;
+    }item;   
 }
 
 /* Token without return */
@@ -113,7 +114,7 @@ GlobalStatement
 ;
 
 PackageStmt
-        : PACKAGE IDENT		{create_symbol(); printf("package: %s\n", $<value.s_val>2);}
+        : PACKAGE IDENT		{create_symbol(); printf("package: %s\n", $<item.value.s_val>2);}
 ;
 
 FunctionDeclStmt
@@ -121,7 +122,7 @@ FunctionDeclStmt
 ;
 
 FuncParameter
-	: '(' ParameterList ')'  { int size = sizeof(char)*2 + sizeof($<value.s_val>2)+1;
+	: '(' ParameterList ')'  { int size = sizeof(char)*2 + sizeof($<item.value.s_val>2)+1;
 				funct_parameter = (char*)malloc(sizeof(size));
 					strcpy(funct_parameter, "()V"); // Here need to change!!!!!!
 					//funct_parameter[size-1]= ')';
@@ -131,10 +132,10 @@ FuncParameter
 
 FuncOpen
         : FUNC IDENT {
-			printf("function: %s\n", $<value.s_val>2);
+			printf("function: %s\n", $<item.value.s_val>2);
 			create_symbol();
-			str_funct_name = (char *)malloc( strlen($<value.s_val>2) + 1);
-			strcpy(str_funct_name, $<value.s_val>2);
+			str_funct_name = (char *)malloc( strlen($<item.value.s_val>2) + 1);
+			strcpy(str_funct_name, $<item.value.s_val>2);
 		     }
 ;
 
@@ -147,14 +148,14 @@ FunctionUpBlock
 ;
 
 Expression
-	: UnaryExpr			 /*{$$ = $1;}*/
-	| Expression binary_op Expression {if		(strcmp($<type>1, "bool") == 0) $<type>$ ="bool";
-					   else if 	(strcmp($<type>1, "int" ) == 0) $<type>$ ="int32";
-					   else 					$<type>$ ="float32";}
+	: UnaryExpr			 {$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;}
+	| Expression binary_op Expression {if		(strcmp($<item.type>1, "bool") == 0) $<item.type>$ ="bool";
+					   else if 	(strcmp($<item.type>1, "int" ) == 0) $<item.type>$ ="int32";
+					   else 					$<item.type>$ ="float32";}
 ;
 
 UnaryExpr
-	: PrimaryExpr			/*{$$ = $1;}*/
+	: PrimaryExpr			{$<item.value>$ = $<item.value>1;$<item.type>$ = $<item.type>1;}
 	| unary_op UnaryExpr
 ;
 
@@ -176,14 +177,14 @@ cmp_op
 ;
 
 add_op
-	: '+'	{ $<value.s_val>$="+";  printf("ADD\n"); }
-	| '-'	{ $<value.s_val>$="-";  printf("SUB\n"); }
+	: '+'	{ $<item.value.s_val>$="+";  printf("ADD\n"); }
+	| '-'	{ $<item.value.s_val>$="-";  printf("SUB\n"); }
 ;
 
 mul_op
-	: '*'   { $<value.s_val>$="*";  printf("MUL\n"); }	  
-	| '/'   { $<value.s_val>$="/";  printf("QUO\n"); }
-	| '%'   { $<value.s_val>$="%";  printf("REM\n"); }
+	: '*'   { $<item.value.s_val>$="*";  printf("MUL\n"); }	  
+	| '/'   { $<item.value.s_val>$="/";  printf("QUO\n"); }
+	| '%'   { $<item.value.s_val>$="%";  printf("REM\n"); }
 ;
 
 unary_op
@@ -193,7 +194,7 @@ unary_op
 ;
 
 PrimaryExpr
-	: Operand	/*{$$ = $1;}*/
+	: Operand	{$<item.value>$ = $<item.value>1; $<item.type>$=$<item.type>1; }
 	| IndexExpr
 	| ConversionExpr
 ;
@@ -203,20 +204,36 @@ IndexExpr
 ;
 
 Operand
-	: Literal /*{$$ = $1;}*/
-	| IDENT {	symtable_type* tmp_table = lookup_symbol($<value.s_val>1);
-			printf("IDENT (name=%s, address=%d)\n",$<value.s_val>1,tmp_table->address);}
+	: Literal 	{ $<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;
+			 printf("hello operand literal %s\n",$<item.type>1); 
+			}
+	| IDENT {	symtable_type* tmp_table = lookup_symbol($<item.value.s_val>1);
+			printf("IDENT (name=%s, address=%d)\n",$<item.value.s_val>1,tmp_table->address);}
 	| '(' Expression ')'
 ;
 
 Literal
-	: INT_LIT	{printf("INT_LIT %d\n",         $<value.i_val>$);}
-	| FLOAT_LIT	{printf("FLOAT_LIT %f\n",       $<value.f_val>$);}
-	| BOOL_LIT	{
-				if($<value.b_val>$ == true) printf("BOOL_LIT TRUE\n");
-				else printf("BOOL_LIT FALSE\n");
+	: INT_LIT	{
+				printf("INT_LIT %d\n",         $<item.value.i_val>$);
+				$<item.value>$= $<item.value>1;
+				$<item.type>$ = $<item.type>1;
+				printf("show INT LIT return type %s\n",$<item.type>1);
 			}
-	| '"' STRING_LIT '"'{printf("STRING_LIT %s\n",        $<value.s_val>$);}
+	| FLOAT_LIT	{	printf("FLOAT_LIT %f\n",       $<item.value.f_val>$);
+                                 $<item.value>$= $<item.value>1;
+                                 $<item.type>$ = $<item.type>1;
+                         }
+
+	| BOOL_LIT	{
+				if($<item.value.b_val>$ == true) printf("BOOL_LIT TRUE\n");
+				else printf("BOOL_LIT FALSE\n");
+				$<item.value>$= $<item.value>1;
+				$<item.type>$ = $<item.type>1;
+			}
+	| '"' STRING_LIT '"'{printf("STRING_LIT %s\n",        $<item.value.s_val>$);
+				$<item.value>$= $<item.value>1;
+				$<item.type>$ = $<item.type>1;
+			}
 ;
 
 ConversionExpr
@@ -244,7 +261,7 @@ SimpleStmt
 
 DeclarationStmt
 	: VAR IDENT Type		
-	| VAR IDENT Type '=' Expression { insert_symbol($<value.s_val>2, $<value.s_val>3, "-");}
+	| VAR IDENT Type '=' Expression { insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-");}
 ;
 
 AssignmentStmt
@@ -315,21 +332,21 @@ CaseStmt
 ;
 
 ReturnType
-	: 		{$<value.s_val>$ = "V";}
-	| Type		{$<value.s_val>$ = $<value.s_val>1;}
+	: 		{$<item.value.s_val>$ = "V";}
+	| Type		{$<item.value.s_val>$ = $<item.value.s_val>1;}
 ;
 
 Type
-	: INT		{$<value.s_val>$ = "int32";}
-	| FLOAT		{$<value.s_val>$ = "float32";}
-	| STRING	{$<value.s_val>$ = "string";}
-	| BOOL		{$<value.s_val>$ = "bool";}
+	: INT		{$<item.value.s_val>$ = "int32";}
+	| FLOAT		{$<item.value.s_val>$ = "float32";}
+	| STRING	{$<item.value.s_val>$ = "string";}
+	| BOOL		{$<item.value.s_val>$ = "bool";}
 ;
 
 ParameterList
-	: 		{ $<value.s_val>$ = ""; }
-	| IDENT Type	 { $<value.s_val>$ = $<value.s_val>2;}
-	| ParameterList ',' IDENT Type  { strcat($<value.s_val>$, $<value.s_val>4); }
+	: 		{ $<item.value.s_val>$ = ""; }
+	| IDENT Type	 { $<item.value.s_val>$ = $<item.value.s_val>2;}
+	| ParameterList ',' IDENT Type  { strcat($<item.value.s_val>$, $<item.value.s_val>4); }
 ;
 
 ReturnStmt
@@ -338,8 +355,8 @@ ReturnStmt
 ;
 
 PrintStmt
-	: PRINT '(' Expression ')'	{printf("PRINT %s\n", $<type>3);}
-	| PRINTLN '(' Expression ')'	{printf("PRINTLN %s\n", $<type>3);}
+	: PRINT '(' Expression ')'	{printf("PRINT %s\n", $<item.type>3);}
+	| PRINTLN '(' Expression ')'	{printf("PRINTLN %s\n", $<item.type>3);}
 ;
 
 %%

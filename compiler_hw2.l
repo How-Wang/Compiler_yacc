@@ -36,7 +36,7 @@ fnumber ({digit}*\.{digit}+)
 <STR>"\""   { BEGIN(INITIAL);
                 return '"';
             }
-<STR>[^\"]* { yylval.value.s_val = strdup(yytext);
+<STR>[^\"]* { yylval.item.value.s_val = strdup(yytext);
                 return STRING_LIT;
             }
 "+"         { return '+'; }
@@ -83,12 +83,12 @@ fnumber ({digit}*\.{digit}+)
 "float32"   { return FLOAT;}
 "string"    { return STRING; }
 "bool"      { return BOOL; }
-"true"      { yylval.type = "bool"; yylval.value.b_val = true; return BOOL_LIT; }
-"false"     { yylval.type = "bool"; yylval.value.b_val = false; return BOOL_LIT; }
+"true"      { yylval.item.type = "bool"; yylval.item.value.b_val = true; return BOOL_LIT; }
+"false"     { yylval.item.type = "bool"; yylval.item.value.b_val = false; return BOOL_LIT; }
 "var"       { return VAR; }
-{inumber}   { yylval.type = "int"; yylval.value.i_val = atoi(yytext); return INT_LIT;}
-{fnumber}   { yylval.type = "float"; yylval.value.f_val = atof(yytext); return FLOAT_LIT;}
-{id}        { yylval.type = "sting"; yylval.value.s_val = strdup(yytext); return IDENT;}
+{inumber}   { yylval.item.type = "int"; yylval.item.value.i_val = atoi(yytext); return INT_LIT;}
+{fnumber}   { yylval.item.type = "float"; yylval.item.value.f_val = atof(yytext); return FLOAT_LIT;}
+{id}        { yylval.item.type = "string"; yylval.item.value.s_val = strdup(yytext); return IDENT;}
 <<EOF>>     { static int once = 0;
                 if (once++) {
                     yyterminate();

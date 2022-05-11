@@ -126,16 +126,17 @@ union YYSTYPE
 {
 #line 61 "compiler_hw2.y" /* yacc.c:1909  */
 
-    union{
-	int i_val;
-    	float f_val;
-    	char *s_val;
-    	bool b_val;	
-	}value;
-    char * type;
-    /* ... */
+    struct{
+	union{
+ 		int i_val;
+		float f_val;
+		char *s_val;
+		bool b_val;
+        }value;
+    	char * type;
+    }item;   
 
-#line 139 "y.tab.h" /* yacc.c:1909  */
+#line 140 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
