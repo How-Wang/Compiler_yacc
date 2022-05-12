@@ -124,7 +124,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 62 "compiler_hw2.y" /* yacc.c:1909  */
+#line 66 "compiler_hw2.y" /* yacc.c:1909  */
 
     struct{
 	union{

@@ -51,6 +51,10 @@
     int global_address = -1;
     char *str_funct_name;
     char *funct_parameter;
+    char *funct_parameterUp;
+    char *funct_parameterIn;
+    char *funct_parameterDown;
+    char *funct_parameterReturn;
 %}
 
 %error-verbose
@@ -121,14 +125,23 @@ PackageStmt
 FunctionDeclStmt
         : FuncOpen FuncParameter ReturnType FuncBlock
 ;
-
+/*
 FuncParameter
-	: '(' ParameterList ')'  { int size = sizeof(char)*2 + sizeof($<item.value.s_val>2)+1;
-				funct_parameter = (char*)malloc(sizeof(size));
-					strcpy(funct_parameter, "()V"); // Here need to change!!!!!!
-					//funct_parameter[size-1]= ')';
-					//strcpy(funct_parameter+1,$<value.s_val>2);
-					printf("func_signature: %s\n",funct_parameter);}
+	: '(' ParameterList ')'  { 	int size = sizeof(char)*2 + sizeof($<item.value.s_val>2)+1;
+					funct_parameter = (char*)malloc(sizeof(size));
+					strcpy(funct_parameter, "()V"); 
+					printf("func_signature: %s\n",funct_parameter);
+				 }*/
+FuncParameter
+        : '(' ParameterList ')'  {      
+                                        funct_parameterUp = (char*)malloc(sizeof(char)*1);
+                                        funct_parameterUp[0] = '(';
+					funct_parameterIn = (char*)malloc(sizeof($<item.value.s_val>2) + 1);
+					strcpy(funct_parameterIn, $<item.value.s_val>2);
+					funct_parameterDown = (char*)malloc(sizeof(char)*1);
+					funct_parameterDown[0] = ')';
+                                        // printf("func_signature: %s, %s, %s\n",funct_parameterUp, funct_parameterIn, funct_parameterDown);
+                                 }
 ;
 
 FuncOpen
@@ -161,11 +174,19 @@ cast_expression
 
 multiplicative_expression
 	: cast_expression
-	| multiplicative_expression mul_op cast_expression { 	if( strcmp($<item.type>1,$<item.type>3)!=0 ){
+	| multiplicative_expression mul_op cast_expression { 	if( !strcmp($<item.value.s_val>2,"REM") && strcmp($<item.type>1,"int32")){
+                                                                        printf("error:%d: invalid operation: (operator REM not defined on %s)\n",yylineno,$<item.type>1);
+                                                                }
+								else if( !strcmp($<item.value.s_val>2,"REM") && strcmp($<item.type>3,"int32")){
+                                                                        printf("error:%d: invalid operation: (operator REM not defined on %s)\n",yylineno,$<item.type>3);
+                                                                }
+
+								else if( strcmp($<item.type>1,$<item.type>3)!=0 ){
 									printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
 									,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
 								}
-								$<item.value>$=$<item.value>3;
+								
+								$<item.type>$=$<item.type>3;
 								printf("%s\n", $<item.value.s_val>2);}
 ;
 
@@ -175,7 +196,7 @@ additive_expression
                                                                         printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
                                                                         ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
                                                                 }
-                                                                $<item.value>$=$<item.value>3;
+                                                                $<item.type>$=$<item.type>3;
 								printf("%s\n", $<item.value.s_val>2);}
 ;
 
@@ -185,7 +206,7 @@ relational_expression
                                                                         printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
                                                                         ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
                                                                 }
-                                                                $<item.value>$=$<item.value>3;
+                                                                $<item.type>$="bool";
 								printf("%s\n", $<item.value.s_val>2);}
 ;
 
@@ -195,7 +216,7 @@ equality_expression
                                                                         printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
                                                                         ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
                                                                 }
-                                                                $<item.value>$=$<item.value>3;
+                                                                $<item.type>$="bool";
 								printf("%s\n", $<item.value.s_val>2);}
 ;
 
@@ -205,8 +226,13 @@ logical_and_expression
                                                                         printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
                                                                         ,yylineno ,"LAND", $<item.type>1,$<item.type>3);
                                                                 }*/
-								if(!$<item.type>1){ $<item.type>1="ERROR"; }
-                                                                $<item.value>$=$<item.value>3;
+								if( !strcmp($<item.type>1,"int32")){
+                                                                        printf("error:%d: invalid operation: (operator LAND not defined on %s)\n",yylineno,$<item.type>1);
+                                                                }
+                                                                else if( !strcmp($<item.type>3,"int32")){
+                                                                        printf("error:%d: invalid operation: (operator LAND not defined on %s)\n",yylineno,$<item.type>3);
+                                                                }
+								$<item.type>$="bool";
 								printf("LAND\n");}
 ;
 
@@ -216,9 +242,16 @@ logical_or_expression
                                                                         printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
                                                                         ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
                                                                 }*/
-								if(!$<item.type>1){ $<item.type>1="ERROR"; }
-                                                                $<item.value>$=$<item.value>3;
-								printf("LOR\n"); $<item.type>$ = "bool";}
+								if( !strcmp($<item.type>1,"int32")){
+                                                                        printf("error:%d: invalid operation: (operator LOR not defined on %s)\n",yylineno,$<item.type>1);
+                                                                }
+                                                                else if( !strcmp($<item.type>3,"int32")){
+                                                                        printf("error:%d: invalid operation: (operator LOR not defined on %s)\n",yylineno,$<item.type>3);
+                                                                }
+								$<item.value>$=$<item.value>3;
+								$<item.type>$="bool";
+								printf("LOR\n");// $<item.type>$ = "bool";
+							   }
 ;
 
 assignment_expression
@@ -229,6 +262,7 @@ assignment_expression
                                                                         ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
                                                                 }
                                                                 $<item.value>$=$<item.value>3;
+								$<item.type>$=$<item.type>3;
 								printf("%s\n", $<item.value.s_val>2);}
 ;
 
@@ -391,10 +425,10 @@ IfStmt
 ;
 
 Condition
-	: Expression/* { if (strcmp($<item.type>1, "bool")!=0){
+	: Expression { if (strcmp($<item.type>1, "bool")!=0){
 				printf("error:%d: non-bool (type %s) used as for condition\n",yylineno+1,$<item.type>1);
 			}
-		     }*/
+		     }
 ;
 
 ForStmt
@@ -426,11 +460,32 @@ CaseStmt
 CaseUp
 	: CASE INT_LIT	{printf("case %d\n", $<item.value.i_val>2);}
 ;
-
+/*
 ReturnType
 	: 		{$<item.value.s_val>$ = "V";}
 	| Type		{$<item.value.s_val>$ = $<item.value.s_val>1;}
 ;
+*/
+
+ReturnType
+	:		{funct_parameterReturn = (char*)malloc(sizeof(char)*1);
+                         funct_parameterReturn[0] = 'V';
+			 funct_parameter = (char*)malloc(sizeof(funct_parameterUp) + sizeof(funct_parameterIn) + sizeof(funct_parameterDown) + sizeof(funct_parameterReturn) + 1);
+			 strcpy(funct_parameter, funct_parameterUp);
+			 strcat(funct_parameter, funct_parameterIn);
+			 strcat(funct_parameter, funct_parameterDown);
+			 strcat(funct_parameter, funct_parameterReturn);
+			 printf("func_signature: %s\n",funct_parameter);
+			}
+	| Type           {funct_parameterReturn = (char*)malloc(sizeof($<item.value.s_val>1));
+                         strcpy(funct_parameterReturn,$<item.value.s_val>1);
+                         funct_parameter = (char*)malloc(sizeof(funct_parameterUp) + sizeof(funct_parameterIn) + sizeof(funct_parameterDown) + sizeof(funct_parameterReturn) + 1);
+                         strcpy(funct_parameter, funct_parameterUp);
+                         strcat(funct_parameter, funct_parameterIn);
+                         strcat(funct_parameter, funct_parameterDown);
+                         strcat(funct_parameter, funct_parameterReturn);
+                         printf("func_signature: %s\n",funct_parameter);
+                        }
 
 Type
 	: INT		{$<item.value.s_val>$ = "int32";}
@@ -442,12 +497,17 @@ Type
 ParameterList
 	: 		{ $<item.value.s_val>$ = ""; }
 	| IDENT Type	 { $<item.value.s_val>$ = $<item.value.s_val>2;}
-	| ParameterList ',' IDENT Type  { strcat($<item.value.s_val>$, $<item.value.s_val>4); }
+	| ParameterList ',' IDENT Type  { 	char* extrac = (char *)malloc(sizeof($<item.value.s_val>4));
+						strcpy(extrac, $<item.value.s_val>4);
+					//	printf("param %s, type: %s", $<item.value.s_val>3,toupper($<item.value.s_val>4[0]));
+						insert_symbol($<item.value.s_val>3,extrac,"-");
+					//	$<item.value.s_val>$ += $<item.value.s_val>4[0];
+					 }
 ;
 
 ReturnStmt
-	: RETURN Expression
-	| RETURN
+	: RETURN Expression	//{printf("%creturn\n",$<item.type>1[0]);}
+	| RETURN	{printf("return\n");}
 ;
 
 PrintStmt

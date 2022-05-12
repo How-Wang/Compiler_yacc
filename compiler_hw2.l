@@ -87,6 +87,7 @@ fnumber ({digit}*\.{digit}+)
 "true"      { yylval.item.type = "bool"; yylval.item.value.b_val = true; return BOOL_LIT; }
 "false"     { yylval.item.type = "bool"; yylval.item.value.b_val = false; return BOOL_LIT; }
 "var"       { return VAR; }
+"return"    { return RETURN;}
 {inumber}   { yylval.item.type = "int32"; yylval.item.value.i_val = atoi(yytext); return INT_LIT;}
 {fnumber}   { yylval.item.type = "float32"; yylval.item.value.f_val = atof(yytext); return FLOAT_LIT;}
 {id}        { yylval.item.value.s_val = strdup(yytext); return IDENT;}
