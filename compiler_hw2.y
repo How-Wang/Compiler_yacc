@@ -47,7 +47,8 @@
     static void dump_symbol();
     /* Global variables */
     bool HAS_ERROR = false;
-
+    int global_level = -1;
+    int global_address = -1;
     char *str_funct_name;
     char *funct_parameter;
 %}
@@ -148,49 +149,87 @@ FunctionUpBlock
 ;
 
 UnaryExpr
-	: PrimaryExpr
-	| UnaryExpr INC {printf("INC\n");}
-	| UnaryExpr DEC {printf("DEC\n");}
-	| unary_op cast_expression {printf("%s\n", $<item.value.s_val>1);}
+	: PrimaryExpr {$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
+	| UnaryExpr INC {printf("INC\n");$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
+	| UnaryExpr DEC {printf("DEC\n");$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
+	| unary_op cast_expression {printf("%s\n", $<item.value.s_val>1);$<item.type>$=$<item.type>2; $<item.value>$=$<item.value>2;}
 ;
 
 cast_expression
-	: UnaryExpr
-	| '(' Type ')' cast_expression
+	: UnaryExpr {$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
+	| '(' Type ')' cast_expression {$<item.type>$=$<item.type>2; $<item.value>$=$<item.value>2;}
 
 multiplicative_expression
 	: cast_expression
-	| multiplicative_expression mul_op cast_expression {printf("%s\n", $<item.value.s_val>2);}
+	| multiplicative_expression mul_op cast_expression { 	if( strcmp($<item.type>1,$<item.type>3)!=0 ){
+									printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
+									,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
+								}
+								$<item.value>$=$<item.value>3;
+								printf("%s\n", $<item.value.s_val>2);}
 ;
 
 additive_expression
 	: multiplicative_expression
-	| additive_expression add_op multiplicative_expression {printf("%s\n", $<item.value.s_val>2);}
+	| additive_expression add_op multiplicative_expression {if( strcmp($<item.type>1,$<item.type>3)!=0 ){
+                                                                        printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
+                                                                        ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
+                                                                }
+                                                                $<item.value>$=$<item.value>3;
+								printf("%s\n", $<item.value.s_val>2);}
 ;
 
 relational_expression
 	: additive_expression
-	| relational_expression rel_op additive_expression {printf("%s\n", $<item.value.s_val>2);}
+	| relational_expression rel_op additive_expression {	if( strcmp($<item.type>1,$<item.type>3)!=0 ){
+                                                                        printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
+                                                                        ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
+                                                                }
+                                                                $<item.value>$=$<item.value>3;
+								printf("%s\n", $<item.value.s_val>2);}
 ;
 
 equality_expression
 	: relational_expression
-	| equality_expression equ_op relational_expression {printf("%s\n", $<item.value.s_val>2);}
+	| equality_expression equ_op relational_expression {if( strcmp($<item.type>1,$<item.type>3)!=0 ){
+                                                                        printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
+                                                                        ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
+                                                                }
+                                                                $<item.value>$=$<item.value>3;
+								printf("%s\n", $<item.value.s_val>2);}
 ;
 
 logical_and_expression
 	: equality_expression
-	| logical_and_expression LAND equality_expression {printf("LAND\n");}
+	| logical_and_expression LAND equality_expression {/*if( strcmp($<item.type>1,$<item.type>3)!=0 ){
+                                                                        printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
+                                                                        ,yylineno ,"LAND", $<item.type>1,$<item.type>3);
+                                                                }*/
+								if(!$<item.type>1){ $<item.type>1="ERROR"; }
+                                                                $<item.value>$=$<item.value>3;
+								printf("LAND\n");}
 ;
 
 logical_or_expression
 	: logical_and_expression
-	| logical_or_expression LOR logical_and_expression {printf("LOR\n"); $<item.type>$ = "bool";}
+	| logical_or_expression LOR logical_and_expression {/*if( strcmp($<item.type>1,$<item.type>3)!=0 ){
+                                                                        printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
+                                                                        ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
+                                                                }*/
+								if(!$<item.type>1){ $<item.type>1="ERROR"; }
+                                                                $<item.value>$=$<item.value>3;
+								printf("LOR\n"); $<item.type>$ = "bool";}
 ;
 
 assignment_expression
 	: logical_or_expression
-	| UnaryExpr assign_op assignment_expression {printf("%s\n", $<item.value.s_val>2);}
+	| UnaryExpr assign_op assignment_expression {		if(!$<item.type>1){ $<item.type>1="ERROR"; }
+								if( strcmp($<item.type>1,$<item.type>3)!=0 ){
+                                                                        printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
+                                                                        ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
+                                                                }
+                                                                $<item.value>$=$<item.value>3;
+								printf("%s\n", $<item.value.s_val>2);}
 ;
 
 Expression
@@ -228,19 +267,26 @@ unary_op
 
 PrimaryExpr
 	: Operand	{$<item.value>$ = $<item.value>1; $<item.type>$=$<item.type>1; }
-	| ConversionExpr
+	| ConversionExpr{$<item.value>$ = $<item.value>1; $<item.type>$=$<item.type>1;}
 ;
 
 Operand
 	: Literal 	{ $<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;}
 
-	| IDENT {	$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;
+	| IDENT { 
+			$<item.value>$ = $<item.value>1; //$<item.type>$ = $<item.type>1;
 			symtable_type* tmp_table = lookup_symbol($<item.value.s_val>1);
-			printf("IDENT (name=%s, address=%d)\n",$<item.value.s_val>1,tmp_table->address);
-			$<item.type>$ = tmp_table->type;}
+			if (!tmp_table){
+				printf("error:%d: undefined: %s\n", yylineno+1, $<item.value.s_val>1);
+				$<item.type>$ = "ERROR";
+			}
+			else{
+				printf("IDENT (name=%s, address=%d)\n",$<item.value.s_val>1,tmp_table->address);
+                        	$<item.type>$ = tmp_table->type;
+			}
+		}
 
-	| '(' Expression ')' {$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;
-				/*printf("hello operand literal %s\n",$<item.type>1);*/}
+	| '(' Expression ')' {$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;}
 ;
 
 Literal
@@ -248,7 +294,6 @@ Literal
 				printf("INT_LIT %d\n",         $<item.value.i_val>$);
 				$<item.value>$= $<item.value>1;
 				$<item.type>$ = "int32";
-				/*printf("show INT LIT return type %s\n",$<item.type>1);*/
 			}
 	| FLOAT_LIT	{	printf("FLOAT_LIT %f\n",       $<item.value.f_val>$);
                                  $<item.value>$= $<item.value>1;
@@ -268,7 +313,7 @@ Literal
 ;
 
 ConversionExpr
-	: Type '(' Expression ')' {
+	: Type '(' Expression ')' { 
 		if (strcmp($<item.type>3, "float32") == 0 && strcmp($<item.value.s_val>1, "int32") == 0){
             		printf("f2i\n");
             		$<item.type>$ = "int32";
@@ -298,12 +343,24 @@ SimpleStmt
 ;
 
 DeclarationStmt
-	: VAR IDENT Type	{ insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-");}	
-	| VAR IDENT Type '=' Expression { insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-");}
+	: VAR IDENT Type	{ symtable_type* tem_table = lookup_symbol($<item.value.s_val>2); 
+					if(tem_table && tem_table->level == global_level){
+						printf("error:%d: %s redeclared in this block. previous declaration at line %d\n"
+							,yylineno, $<item.value.s_val>2, tem_table -> lineno);
+						insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-");				
+					}
+					else{ insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-"); }}	
+	| VAR IDENT Type '=' Expression { symtable_type* tem_table = lookup_symbol($<item.value.s_val>2); 
+                                        if(tem_table && tem_table->level == global_level){
+                                                printf("error:%d: %s redeclared in this block. previous declaration at line %d\n"
+							,yylineno, $<item.value.s_val>2, tem_table -> lineno);
+                                        	insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-");
+					}
+                                        else{ insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-"); }}
 ;
 
 assign_op
-	: '=' { $<item.value.s_val>$="ASSIGN"; }
+	: '=' 	{ $<item.value.s_val>$="ASSIGN"; }
 	| ADD_ASSIGN { $<item.value.s_val>$="ADD"; }
 	| SUB_ASSIGN { $<item.value.s_val>$="SUB"; }
 	| MUL_ASSIGN { $<item.value.s_val>$="MUL"; }
@@ -334,7 +391,10 @@ IfStmt
 ;
 
 Condition
-	: Expression
+	: Expression/* { if (strcmp($<item.type>1, "bool")!=0){
+				printf("error:%d: non-bool (type %s) used as for condition\n",yylineno+1,$<item.type>1);
+			}
+		     }*/
 ;
 
 ForStmt
@@ -415,8 +475,8 @@ int main(int argc, char *argv[])
 }
 
 /* Symbol Table */
-int global_level = -1;
-int global_address = -1;
+//int global_level = -1;
+//int global_address = -1;
 
 symtable_stack_type* stack_head = NULL; 
 
