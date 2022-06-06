@@ -154,7 +154,7 @@ FuncBlock
 ;
 
 FunctionUpBlock
-	: '{' 				/*{ insert_symbol(str_funct_name,"func","()V"); }*/
+	: '{' 				
 ;
 
 UnaryExpr
@@ -218,10 +218,7 @@ equality_expression
 
 logical_and_expression
 	: equality_expression					{$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
-	| logical_and_expression LAND equality_expression {/*if( strcmp($<item.type>1,$<item.type>3)!=0 ){
-                                                                        printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
-                                                                        ,yylineno ,"LAND", $<item.type>1,$<item.type>3);
-                                                                }*/
+	| logical_and_expression LAND equality_expression {
 								if( !strcmp($<item.type>1,"int32")){
                                                                         printf("error:%d: invalid operation: (operator LAND not defined on %s)\n",yylineno,$<item.type>1);
                                                                 }
@@ -234,10 +231,7 @@ logical_and_expression
 
 logical_or_expression
 	: logical_and_expression				{$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
-	| logical_or_expression LOR logical_and_expression {/*if( strcmp($<item.type>1,$<item.type>3)!=0 ){
-                                                                        printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
-                                                                        ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
-                                                                }*/
+	| logical_or_expression LOR logical_and_expression {
 								if( !strcmp($<item.type>1,"int32")){
                                                                         printf("error:%d: invalid operation: (operator LOR not defined on %s)\n",yylineno,$<item.type>1);
                                                                 }
@@ -302,21 +296,6 @@ PrimaryExpr
 
 Operand
 	: Literal 	{ $<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;}
-/*
-	| IDENT { 
-			$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;
-			symtable_type* tmp_table = lookup_symbol($<item.value.s_val>1);
-			if (!tmp_table){
-				printf("error:%d: undefined: %s\n", yylineno+1, $<item.value.s_val>1);
-				$<item.type>$ = "ERROR";
-			}
-			else{
-				printf("IDENT (name=%s, address=%d)\n",$<item.value.s_val>1,tmp_table->address);
-                        	$<item.type>$ = tmp_table->type;
-			}
-		}
-	| IDENT '(' ')'	{printf("call: %s\n", $<item.value.s_val>1);}
-*/	
 	| IdSet 	     {$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;}
 	| '(' Expression ')' {$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;}
 ;
@@ -525,7 +504,6 @@ ParameterList
                                 temp_str[1] = '\0';
                                 temp_str[0] = toupper($<item.value.s_val>2[0]);
 				$<item.value.s_val>$ = temp_str; 
-				//$<item.value.s_val>$ = $<item.value.s_val>1;
 				printf("param %s, type: %c\n", $<item.value.s_val>1,toupper($<item.value.s_val>2[0]));
 				insert_symbol($<item.value.s_val>1,$<item.value.s_val>2,"-", 1);
 			}
@@ -576,8 +554,6 @@ int main(int argc, char *argv[])
 }
 
 /* Symbol Table */
-//int global_level = -1;
-//int global_address = -1;
 
 symtable_stack_type* stack_head = NULL; 
 
