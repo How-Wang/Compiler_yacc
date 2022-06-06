@@ -42,19 +42,22 @@
     };
 
     static void create_symbol();
-    static void insert_symbol(char* name, char* type, char* Func_sig);
+    static void insert_symbol(char* name, char* type, char* Func_sig, int para_type);
     static symtable_type* lookup_symbol(char * name);
     static void dump_symbol();
+    static char* find_para(char* name);
+
     /* Global variables */
     bool HAS_ERROR = false;
     int global_level = -1;
-    int global_address = -1;
+    int global_address = 0;
     char *str_funct_name;
     char *funct_parameter;
     char *funct_parameterUp;
     char *funct_parameterIn;
     char *funct_parameterDown;
     char *funct_parameterReturn;
+
 %}
 
 %error-verbose
@@ -125,13 +128,7 @@ PackageStmt
 FunctionDeclStmt
         : FuncOpen FuncParameter ReturnType FuncBlock
 ;
-/*
-FuncParameter
-	: '(' ParameterList ')'  { 	int size = sizeof(char)*2 + sizeof($<item.value.s_val>2)+1;
-					funct_parameter = (char*)malloc(sizeof(size));
-					strcpy(funct_parameter, "()V"); 
-					printf("func_signature: %s\n",funct_parameter);
-				 }*/
+
 FuncParameter
         : '(' ParameterList ')'  {      
                                         funct_parameterUp = (char*)malloc(sizeof(char)*1);
@@ -140,7 +137,6 @@ FuncParameter
 					strcpy(funct_parameterIn, $<item.value.s_val>2);
 					funct_parameterDown = (char*)malloc(sizeof(char)*1);
 					funct_parameterDown[0] = ')';
-                                        // printf("func_signature: %s, %s, %s\n",funct_parameterUp, funct_parameterIn, funct_parameterDown);
                                  }
 ;
 
@@ -158,7 +154,7 @@ FuncBlock
 ;
 
 FunctionUpBlock
-	: '{' 				{ insert_symbol(str_funct_name,"func","()V"); }
+	: '{' 				/*{ insert_symbol(str_funct_name,"func","()V"); }*/
 ;
 
 UnaryExpr
@@ -173,7 +169,7 @@ cast_expression
 	| '(' Type ')' cast_expression {$<item.type>$=$<item.type>2; $<item.value>$=$<item.value>2;}
 
 multiplicative_expression
-	: cast_expression
+	: cast_expression				{$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
 	| multiplicative_expression mul_op cast_expression { 	if( !strcmp($<item.value.s_val>2,"REM") && strcmp($<item.type>1,"int32")){
                                                                         printf("error:%d: invalid operation: (operator REM not defined on %s)\n",yylineno,$<item.type>1);
                                                                 }
@@ -191,7 +187,7 @@ multiplicative_expression
 ;
 
 additive_expression
-	: multiplicative_expression
+	: multiplicative_expression				{$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
 	| additive_expression add_op multiplicative_expression {if( strcmp($<item.type>1,$<item.type>3)!=0 ){
                                                                         printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
                                                                         ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
@@ -201,7 +197,7 @@ additive_expression
 ;
 
 relational_expression
-	: additive_expression
+	: additive_expression					{$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
 	| relational_expression rel_op additive_expression {	if( strcmp($<item.type>1,$<item.type>3)!=0 ){
                                                                         printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
                                                                         ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
@@ -211,7 +207,7 @@ relational_expression
 ;
 
 equality_expression
-	: relational_expression
+	: relational_expression					{$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
 	| equality_expression equ_op relational_expression {if( strcmp($<item.type>1,$<item.type>3)!=0 ){
                                                                         printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
                                                                         ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
@@ -221,7 +217,7 @@ equality_expression
 ;
 
 logical_and_expression
-	: equality_expression
+	: equality_expression					{$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
 	| logical_and_expression LAND equality_expression {/*if( strcmp($<item.type>1,$<item.type>3)!=0 ){
                                                                         printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
                                                                         ,yylineno ,"LAND", $<item.type>1,$<item.type>3);
@@ -237,7 +233,7 @@ logical_and_expression
 ;
 
 logical_or_expression
-	: logical_and_expression
+	: logical_and_expression				{$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
 	| logical_or_expression LOR logical_and_expression {/*if( strcmp($<item.type>1,$<item.type>3)!=0 ){
                                                                         printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
                                                                         ,yylineno ,$<item.value.s_val>2, $<item.type>1,$<item.type>3);
@@ -255,7 +251,7 @@ logical_or_expression
 ;
 
 assignment_expression
-	: logical_or_expression
+	: logical_or_expression					{$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
 	| UnaryExpr assign_op assignment_expression {		if(!$<item.type>1){ $<item.type>1="ERROR"; }
 								if( strcmp($<item.type>1,$<item.type>3)!=0 ){
                                                                         printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n"
@@ -267,7 +263,7 @@ assignment_expression
 ;
 
 Expression
-	: assignment_expression 
+	: assignment_expression 				{$<item.type>$=$<item.type>1; $<item.value>$=$<item.value>1;}
 ;
 
 rel_op
@@ -306,9 +302,9 @@ PrimaryExpr
 
 Operand
 	: Literal 	{ $<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;}
-
+/*
 	| IDENT { 
-			$<item.value>$ = $<item.value>1; //$<item.type>$ = $<item.type>1;
+			$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;
 			symtable_type* tmp_table = lookup_symbol($<item.value.s_val>1);
 			if (!tmp_table){
 				printf("error:%d: undefined: %s\n", yylineno+1, $<item.value.s_val>1);
@@ -319,8 +315,39 @@ Operand
                         	$<item.type>$ = tmp_table->type;
 			}
 		}
-
+	| IDENT '(' ')'	{printf("call: %s\n", $<item.value.s_val>1);}
+*/	
+	| IdSet 	     {$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;}
 	| '(' Expression ')' {$<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;}
+;
+
+IdSet 
+	: IDENT {
+                        $<item.value>$ = $<item.value>1; $<item.type>$ = $<item.type>1;
+                        symtable_type* tmp_table = lookup_symbol($<item.value.s_val>1);
+                        if (!tmp_table){
+                                printf("error:%d: undefined: %s\n", yylineno+1, $<item.value.s_val>1);
+                                $<item.type>$ = "ERROR";
+                        }
+                        else{
+                                printf("IDENT (name=%s, address=%d)\n",$<item.value.s_val>1,tmp_table->address);
+                                $<item.type>$ = tmp_table->type;
+                        }
+          }
+	| IDENT '(' CallParaList ')' {
+			//	printf("call: %s\n", $<item.value.s_val>1);
+				$<item.value>$ = $<item.value>1;
+				$<item.type>$ = "func";
+				char* temp_sig_str = (char *)malloc(sizeof(char)*10);
+				temp_sig_str = find_para($<item.value.s_val>1);
+				printf("call: %s%s\n", $<item.value.s_val>1, temp_sig_str);
+			}
+;
+
+CallParaList
+	:
+	| Operand
+	| CallParaList ',' Operand
 ;
 
 Literal
@@ -381,16 +408,16 @@ DeclarationStmt
 					if(tem_table && tem_table->level == global_level){
 						printf("error:%d: %s redeclared in this block. previous declaration at line %d\n"
 							,yylineno, $<item.value.s_val>2, tem_table -> lineno);
-						insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-");				
+						insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-", 0);				
 					}
-					else{ insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-"); }}	
+					else{ insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-", 0); }}	
 	| VAR IDENT Type '=' Expression { symtable_type* tem_table = lookup_symbol($<item.value.s_val>2); 
                                         if(tem_table && tem_table->level == global_level){
                                                 printf("error:%d: %s redeclared in this block. previous declaration at line %d\n"
 							,yylineno, $<item.value.s_val>2, tem_table -> lineno);
-                                        	insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-");
+                                        	insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-", 0);
 					}
-                                        else{ insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-"); }}
+                                        else{ insert_symbol($<item.value.s_val>2, $<item.value.s_val>3, "-", 0); }}
 ;
 
 assign_op
@@ -460,12 +487,6 @@ CaseStmt
 CaseUp
 	: CASE INT_LIT	{printf("case %d\n", $<item.value.i_val>2);}
 ;
-/*
-ReturnType
-	: 		{$<item.value.s_val>$ = "V";}
-	| Type		{$<item.value.s_val>$ = $<item.value.s_val>1;}
-;
-*/
 
 ReturnType
 	:		{funct_parameterReturn = (char*)malloc(sizeof(char)*1);
@@ -476,15 +497,19 @@ ReturnType
 			 strcat(funct_parameter, funct_parameterDown);
 			 strcat(funct_parameter, funct_parameterReturn);
 			 printf("func_signature: %s\n",funct_parameter);
+			 insert_symbol(str_funct_name,"func",funct_parameter, 0);
 			}
-	| Type           {funct_parameterReturn = (char*)malloc(sizeof($<item.value.s_val>1));
-                         strcpy(funct_parameterReturn,$<item.value.s_val>1);
-                         funct_parameter = (char*)malloc(sizeof(funct_parameterUp) + sizeof(funct_parameterIn) + sizeof(funct_parameterDown) + sizeof(funct_parameterReturn) + 1);
+	| Type          {
+                         funct_parameterReturn  = (char *)malloc(sizeof(char)*2);
+                         funct_parameterReturn[1] = '\0';
+                         funct_parameterReturn[0] = toupper($<item.value.s_val>1[0]);
+			 funct_parameter = (char*)malloc(sizeof(funct_parameterUp) + sizeof(funct_parameterIn) + sizeof(funct_parameterDown) + sizeof(funct_parameterReturn) + 1);
                          strcpy(funct_parameter, funct_parameterUp);
                          strcat(funct_parameter, funct_parameterIn);
                          strcat(funct_parameter, funct_parameterDown);
                          strcat(funct_parameter, funct_parameterReturn);
                          printf("func_signature: %s\n",funct_parameter);
+			 insert_symbol(str_funct_name,"func",funct_parameter, 0);
                         }
 
 Type
@@ -496,17 +521,33 @@ Type
 
 ParameterList
 	: 		{ $<item.value.s_val>$ = ""; }
-	| IDENT Type	 { $<item.value.s_val>$ = $<item.value.s_val>2;}
-	| ParameterList ',' IDENT Type  { 	char* extrac = (char *)malloc(sizeof($<item.value.s_val>4));
-						strcpy(extrac, $<item.value.s_val>4);
-					//	printf("param %s, type: %s", $<item.value.s_val>3,toupper($<item.value.s_val>4[0]));
-						insert_symbol($<item.value.s_val>3,extrac,"-");
-					//	$<item.value.s_val>$ += $<item.value.s_val>4[0];
-					 }
+	| IDENT Type	 { 	char temp_str[2];
+                                temp_str[1] = '\0';
+                                temp_str[0] = toupper($<item.value.s_val>2[0]);
+				$<item.value.s_val>$ = temp_str; 
+				//$<item.value.s_val>$ = $<item.value.s_val>1;
+				printf("param %s, type: %c\n", $<item.value.s_val>1,toupper($<item.value.s_val>2[0]));
+				insert_symbol($<item.value.s_val>1,$<item.value.s_val>2,"-", 1);
+			}
+	
+	| ParameterList ',' IDENT Type  {       char* extrac = (char *)malloc(sizeof($<item.value.s_val>4));
+                                                strcpy(extrac, $<item.value.s_val>4);
+                                         	printf("param %s, type: %c\n", $<item.value.s_val>3,toupper($<item.value.s_val>4[0]));
+						insert_symbol($<item.value.s_val>3,extrac,"-", 1);
+						char* temp_para_str = (char *)malloc(sizeof(char)*2);
+						temp_para_str[1] = '\0';
+						temp_para_str[0] = toupper($<item.value.s_val>4[0]);
+                                        	
+						char* combine = (char *)malloc(sizeof($<item.value.s_val>1) + sizeof(temp_para_str) + 1);
+						strcpy(combine, $<item.value.s_val>1);
+						strcat(combine, temp_para_str);
+						$<item.value.s_val>$ = combine;
+					}
+                                         
 ;
 
 ReturnStmt
-	: RETURN Expression	//{printf("%creturn\n",$<item.type>1[0]);}
+	: RETURN Expression	{ printf("%creturn\n",$<item.type>2[0]);}
 	| RETURN	{printf("return\n");}
 ;
 
@@ -553,19 +594,20 @@ static void create_symbol() {
     	printf("> Create symbol table (scope level %d)\n", global_level);
 }
 
-static void insert_symbol(char* name, char* type, char* Func_sig) {
+static void insert_symbol(char* name, char* type, char* Func_sig, int para_bool) {
     	if(strcmp(type,"func")==0)
-		printf("> Insert `%s` (addr: %d) to scope level %d\n", name, global_address, global_level-1);
+		printf("> Insert `%s` (addr: -1) to scope level %d\n", name, global_level-1);
 	else
 		printf("> Insert `%s` (addr: %d) to scope level %d\n", name, global_address, global_level);
 	// Create a new table
 
 	symtable_type* tmp_table = (symtable_type *)malloc(sizeof(symtable_type));
 	
-	tmp_table -> lineno = strcmp(type, "func")? yylineno : yylineno+1 ;
+	tmp_table -> lineno = (strcmp(type, "func")==0 || (para_bool == 1))? yylineno+1 : yylineno ;
 	tmp_table -> level = global_level;
-	tmp_table -> address = global_address;
-	global_address ++;
+	tmp_table -> address = (strcmp(type, "func")==0)? -1 : global_address;
+	if (!(strcmp(type, "func")==0))
+		global_address ++;
 	
 	tmp_table -> name = (char*) malloc (strlen(name) + 1);
         strcpy(tmp_table-> name, name);
@@ -613,6 +655,24 @@ static symtable_type* lookup_symbol(char * name) {
 		tmp_stack = tmp_stack -> next;
 	}
 	return 0;
+}
+
+static char* find_para(char * name){
+	// from stack head
+        symtable_stack_type* tmp_stack = stack_head;
+        while(tmp_stack){
+                // from the first table in this stack
+                symtable_type* tmp_table = tmp_stack -> table;
+                while(tmp_table){
+                        if(strcmp(tmp_table -> name,name)==0){
+                                return tmp_table -> func_sig;
+                        }
+                        tmp_table = tmp_table -> next;
+                }
+                tmp_stack = tmp_stack -> next;
+        }
+        return 0;
+
 }
 
 static void dump_symbol() {
